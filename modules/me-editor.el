@@ -29,7 +29,23 @@
 (use-package tempel-collection
   :straight t
   :after tempel
-  :demand t)
+  :demand)
+
+(use-package wgrep
+  :straight t
+  :commands wgrep-change-to-wgrep-mode
+  :custom
+  (wgrep-auto-save-buffer t))
+
+(use-package spdx
+  :straight (:host github :repo "condy0919/spdx.el")
+  :custom
+  (spdx-copyright-holder 'user)
+  (spdx-project-detection 'auto)
+  :init
+  (+map!
+    "il" #'spdx-insert-spdx-only
+    "ic" #'spdx-insert-spdx-copyright))
 
 (use-package rainbow-delimiters
   :straight t
@@ -45,6 +61,11 @@
   (puthash 'dts-mode
            (rx (and symbol-start (or (+ digit) (+ hex-digit) (and "0" (any "xX") (+ hex-digit))) symbol-end))
            highlight-numbers-modelist))
+
+(use-package zones
+  :straight t
+  :demand
+  :after minemacs-lazy)
 
 (use-package expreg
   :straight (:host github :repo "casouri/expreg")
@@ -76,9 +97,8 @@
   (super-save-delete-trailing-whitespace 'except-current-line)
   :config
   ;; Additional triggers
-  (setq super-save-triggers
-        (append super-save-triggers
-                '(magit magit-status winner-undo winner-redo find-file))))
+  (cl-callf append super-save-triggers
+    '(magit magit-status winner-undo winner-redo find-file)))
 
 (use-package real-backup
   :straight (:host github :repo "abougouffa/real-backup")
@@ -86,8 +106,12 @@
 
 (use-package selection-highlight-mode
   :straight (:host github :repo "balloneij/selection-highlight-mode")
-  :hook (minemacs-first-file . (lambda () (run-with-timer 2.0 nil #'selection-highlight-mode))) ; Starting it without a delay can cause issues
-  :custom-face (selection-highlight-mode-match-face ((t (:background "lavender")))))
+  :custom-face (selection-highlight-mode-match-face ((t (:background "lavender"))))
+  :init
+  ;; HACK: For some reason, `selection-highlight-mode' dosn't work sometimes
+  ;; unless it is disabled the enabled again. It is quite difficult to reproduce
+  ;; as it happens pretty randomly.
+  (+with-delayed-1! (selection-highlight-mode 1)))
 
 (use-package highlight-indent-guides
   :straight t

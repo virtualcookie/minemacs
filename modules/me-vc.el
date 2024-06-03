@@ -28,14 +28,21 @@
 
 (use-package magit-todos
   :straight t
-  :after magit)
+  :init
+  (+map-local! :keymaps 'magit-status-mode-map
+    "t" `(,(+cmdfy! (magit-todos-mode 'toggle) (magit-refresh)) :wk "magit-todos-mode")))
+
+(use-package magit-file-icons
+  :straight t
+  :after magit-status
+  :init
+  (magit-file-icons-mode 1))
 
 (use-package magit-imerge
   :straight t
+  :after magit
   :init
-  (with-eval-after-load 'magit
-    (transient-append-suffix 'magit-merge "m"
-      '("M" "magit-imerge" magit-imerge))))
+  (transient-append-suffix 'magit-merge "m" '("M" "magit-imerge" magit-imerge)))
 
 (use-package closql
   :straight t)
@@ -43,7 +50,7 @@
 (use-package forge
   :straight t
   :after magit
-  :demand t
+  :demand
   :preface
   ;; Keybindings will be overriten by `evil-collection'
   (setq forge-add-default-bindings nil)
@@ -61,56 +68,6 @@
   :config
   (transient-append-suffix 'forge-dispatch "M"
     '("m" "forge merge (via API)" forge-merge)))
-
-(use-package emojify ;; Needed by `code-review'
-  :straight t
-  :custom
-  (emojify-emoji-set "emojione-v2.2.6")
-  (emojify-emojis-dir (concat minemacs-cache-dir "emojify/emojis/"))
-  (emojify-display-style 'image)
-  (emojify-download-emojis-p t)
-  :init
-  (when (< emacs-major-version 29)
-    (+map! "ie" '(emojify-insert-emoji :wk "Emoji"))))
-
-(use-package code-review
-  :straight (:host github :repo "phelrine/code-review" :branch "fix/closql-update")
-  :after magit
-  :custom
-  (code-review-download-dir (concat minemacs-cache-dir "code-review/"))
-  (code-review-db-database-file (concat minemacs-local-dir "code-review/database.sqlite"))
-  (code-review-log-file (concat minemacs-local-dir "code-review/code-review-error.log"))
-  (code-review-auth-login-marker 'forge) ; use the same credentials as forge in ~/.authinfo.gpg
-  :init
-  (with-eval-after-load 'magit
-    (transient-append-suffix 'magit-merge "i"
-      '("y" "Review pull-request" code-review-forge-pr-at-point)))
-  (with-eval-after-load 'forge
-    (transient-append-suffix 'forge-dispatch "c u"
-      '("c r" "review pull-request" code-review-forge-pr-at-point))))
-
-(use-package jiralib2
-  :straight t
-  :commands +jira-insert-ticket-id
-  :init
-  (defvar-local +jira-open-status '("open" "to do" "in progress"))
-  :config
-  (defun +jira--ticket-annotation-fn (ticket)
-    (let ((item (assoc ticket minibuffer-completion-table)))
-      (when item (concat "    " (cdr item)))))
-
-  (defun +jira-insert-ticket-id ()
-    "Insert ticket ID for \"open\", \"to do\", or \"in progress\" tickets."
-    (interactive)
-    (when-let* ((issues (jiralib2-jql-search (format "assignee=\"%s\" AND status in (%s)"
-                                                     jiralib2-user-login-name
-                                                     (string-join (mapcar (apply-partially #'format "%S") +jira-open-status) ", "))))
-                (tickets (mapcar (lambda (t) (cons (cdr (assoc 'key t)) (cdr (assoc 'summary (cdr (assoc 'fields t)))))) issues)))
-      (insert
-       (if (length= tickets 1)
-           (car (car tickets))
-         (let ((completion-extra-properties '(:annotation-function +jira--ticket-annotation-fn)))
-           (completing-read "Select ticket: " tickets)))))))
 
 (use-package diff-hl
   :straight t
@@ -135,12 +92,12 @@
 ;; Enforce git commit conventions. See: chris.beams.io/posts/git-commit
 (use-package git-commit
   :after magit
-  :demand t
+  :demand
   :custom
   (git-commit-summary-max-length 72) ; defaults to Github's max commit message length
   (git-commit-style-convention-checks '(overlong-summary-line non-empty-second-line))
   :config
-  (evil-set-initial-state 'git-commit-mode 'insert)
+  (with-eval-after-load 'evil (evil-set-initial-state 'git-commit-mode 'insert))
   (global-git-commit-mode 1))
 
 (use-package git-modes
@@ -160,13 +117,7 @@
 
 ;; https://chromium.googlesource.com/chromiumos/platform/dev-util/+/HEAD/contrib/emacs/gerrit/README.md
 (use-package gerrit
-  :straight (chromeos-gerrit :type git :host nil
-                             :repo "https://chromium.googlesource.com/chromiumos/platform/dev-util"
-                             :files ("contrib/emacs/gerrit/*")))
-
-(use-package gerrit-section
-  :straight chromeos-gerrit
-  :commands gerrit-comments)
+  :straight (chromeos-gerrit :type git :repo "https://chromium.googlesource.com/chromiumos/platform/dev-util" :files ("contrib/emacs/gerrit/*")))
 
 (use-package repo-transient
   :straight chromeos-gerrit
@@ -174,8 +125,7 @@
   repo-upload-menu repo-upload-menu-with-repohooks repo-start-menu repo-sync-menu repo-rebase-menu repo-main-menu
   repo:all-projects repo:current-project
   :init
-  (+map!
-    "grr" #'repo-main-menu))
+  (+map! "grr" #'repo-main-menu))
 
 (use-package diffview
   :straight t

@@ -110,8 +110,8 @@
   :commands devdocs-install
   ;; MinEmacs sets the `use-package-always-defer' to t, so by default, packages
   ;; are deferred to save startup time. If you want to load a package
-  ;; immediately, you need to explicitly use `:demand t'.
-  ;; :demand t
+  ;; immediately, you need to explicitly use `:demand'.
+  ;; :demand
   ;; Set some custom variables, using the `:custom' block is recommended over
   ;; using `setq'. This will ensure calling the right setter function if it is
   ;; defined for the custom variable.
@@ -266,7 +266,7 @@
   ;; Add a hook on git-commit, so it adds the ticket number to the commit message
   (add-hook
    'git-commit-mode-hook
-   (defun +jira-commit-auto-insert-ticket-id-h ()
+   (satch-defun +jira-commit-auto-insert-ticket-id-h ()
      (when (and jiralib2-user-login-name
                 ;; Do not auto insert if the commit message is not empty (ex. amend)
                 (+first-line-empty-p))

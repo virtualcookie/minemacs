@@ -8,13 +8,9 @@
 
 ;;; Code:
 
-(defgroup minemacs-org nil
-  "MinEmacs org-mode tweaks."
-  :group 'minemacs)
-
 (use-package me-org-extras
   :after org
-  :demand t
+  :demand
   :config
   (+org-extras-outline-path-setup)
   (+org-extras-latex-classes-setup)
@@ -25,22 +21,20 @@
   (+org-extras-lower-case-keywords-and-properties-setup))
 
 (use-package org-contrib
-  :straight (:host github :repo "abougouffa/org-contrib" :branch "master")
-  :after org)
+  :straight (:host github :repo "abougouffa/org-contrib" :branch "master"))
 
 (use-package engrave-faces
-  :straight t
-  :after org)
+  :straight t)
 
 ;; Org export
 (use-package ox-hugo
   :straight t
   :after ox
-  :demand t)
+  :demand)
 
 (use-package ox-extra
   :after ox
-  :demand t
+  :demand
   :config
   (ox-extras-activate '(latex-header-blocks ignore-headlines)))
 
@@ -67,10 +61,8 @@
   ;; Force monospaced font for tags
   (org-modern-tag ((t (:inherit org-verbatim :weight regular :foreground "black" :background "LightGray" :box "black"))))
   :custom
-  (org-modern-star '("◉" "○" "◈" "◇" "✳" "◆" "✸" "▶"))
   (org-modern-table-vertical 5)
   (org-modern-table-horizontal 2)
-  (org-modern-list '((?+ . "➤") (?- . "–") (?* . "•")))
   (org-modern-block-fringe nil)
   (org-modern-checkbox nil) ;; Not that interesting! Maybe it depends on the used font
   (org-modern-todo-faces
@@ -99,7 +91,7 @@
 (use-package evil-org-agenda
   :after evil-org
   :unless (+package-disabled-p 'evil 'me-evil)
-  :demand t
+  :demand
   :config
   (evil-org-agenda-set-keys))
 

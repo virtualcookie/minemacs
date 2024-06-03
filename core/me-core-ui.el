@@ -11,7 +11,7 @@
 ;; Disable previously enabled custom themes before enabling a new one.
 (advice-add
  'load-theme :before
- (defun +theme--disable-previous-themes:before-a (&rest _)
+ (satch-defun +theme--disable-previous-themes:before-a (&rest _)
    "Disable previously enabled themes before enabling the new one."
    (mapc #'disable-theme custom-enabled-themes)))
 
@@ -31,61 +31,37 @@
   (with-eval-after-load 'org
     (doom-themes-org-config)))
 
-(use-package dashboard
-  :straight t
-  :after evil evil-collection
-  :demand t
-  :unless (bound-and-true-p +dashboard-disable)
-  :init
-  (+map! "oD" #'dashboard-open)
-  :custom
-  (dashboard-set-heading-icons t)
-  (dashboard-set-file-icons t)
-  (dashboard-center-content t)
-  (dashboard-banner-ascii "MinEmacs")
-  (dashboard-banner-logo-title "Welcome to MinEmacs!")
-  (dashboard-items '((recents . 5) (projects . 5) (bookmarks . 5)))
-  (dashboard-image-banner-max-width 600)
-  (dashboard-projects-backend 'project-el)
-  (dashboard-startup-banner (concat minemacs-assets-dir "images/minemacs.png"))
-  :config
-  ;; Ensure setting the keybindings before opening the dashboard
-  (evil-collection-dashboard-setup)
-
-  ;; Avoid opening the dashboard when Emacs starts with an open file.
-  (unless (cl-some #'buffer-file-name (buffer-list))
-    (dashboard-open)))
-
 (use-package doom-modeline
   :straight t
   :unless (memq 'me-nano minemacs-modules)
-  :hook (minemacs-after-startup . doom-modeline-mode)
+  :hook (minemacs-lazy . doom-modeline-mode)
   :custom
-  (doom-modeline-height 28)
   (doom-modeline-bar-width 1)
   (doom-modeline-time-icon nil)
   (doom-modeline-buffer-encoding 'nondefault)
   (doom-modeline-unicode-fallback t)
+  (doom-modeline-total-line-number t)
   (doom-modeline-enable-word-count t)
   (doom-modeline-continuous-word-count-modes '(markdown-mode gfm-mode org-mode rst-mode latex-mode tex-mode text-mode))
   :custom-face
   ;; Hide the modeline bar
-  (doom-modeline-bar ((t (:inherit mode-line :background nil))))
-  (doom-modeline-bar-inactive ((t (:inherit mode-line :background nil)))))
+  (doom-modeline-bar ((t (:inherit mode-line :background unspecified))))
+  (doom-modeline-bar-inactive ((t (:inherit mode-line :background unspecified)))))
 
-(use-package spacious-padding
-  :straight t
-  :hook (minemacs-after-startup . spacious-padding-mode)
+(use-package enlight
+  :straight (:host github :repo "ichernyshovvv/enlight")
+  :when (>= emacs-major-version 29) ; TEMP+BUG: There is an issue with Emacs 28
   :custom
-  (spacious-padding-subtle-mode-line t)
-  (spacious-padding-widths '(:internal-border-width 15
-                             :right-divider-width 20
-                             :header-line-width 4
-                             :mode-line-width 1
-                             :tab-width 3
-                             :scroll-bar-width 8
-                             :left-fringe-width 8
-                             :right-fringe-width 13)))
+  (enlight-content
+   (enlight-menu
+    '(("Org Mode"
+       ("Org-Agenda (today)" (org-agenda nil "a") "a"))
+      ("Projects"
+       ("Switch to project" project-switch-project "p")))))
+  :init
+  (if minemacs-started-with-extra-args-p
+      (enlight-open)
+    (setq initial-buffer-choice #'enlight)))
 
 
 (provide 'me-core-ui)

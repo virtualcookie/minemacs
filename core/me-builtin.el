@@ -142,8 +142,8 @@
   (visible-bell nil)
   ;; Increase the large file threshold to 50 MiB
   (large-file-warning-threshold (* 50 1024 1024))
-  ;; Initial scratch message (will be overridden if "fortune" is installed)
-  (initial-scratch-message ";; MinEmacs -- start here!")
+  ;; No initial scratch message
+  (initial-scratch-message nil)
   ;; Set initial buffer to fundamental-mode for faster load
   (initial-major-mode 'fundamental-mode)
   ;; Always prompt in minibuffer (no GUI)
@@ -179,6 +179,7 @@
   ;; The `inhibit-startup-echo-area-message' variable is very restrictive, there is only one unique way of setting it right!
   ;; See: reddit.com/r/emacs/comments/6e9o4o/comment/di8q1t5
   (fset 'display-startup-echo-area-message #'ignore)
+  (fset 'display-startup-screen #'ignore)
 
   ;;; Why use anything but UTF-8?
   (prefer-coding-system 'utf-8)
@@ -212,63 +213,41 @@ or file path may exist now."
   ;; Advice `emacs-session-filename' to ensure creating "session.ID" files in a sub-directory
   (let ((x-win-dir (+directory-ensure minemacs-local-dir "x-win/")))
     (advice-add
-     #'emacs-session-filename :filter-return
-     (defun +emacs-session-filename--in-subdir:filter-return-a (session-filename)
+     'emacs-session-filename :filter-return
+     (satch-defun +emacs-session-filename--in-subdir:filter-return-a (session-filename)
        "Put the SESSION-FILENAME in the \"x-win/\" sub-directory."
        (concat x-win-dir (file-name-nondirectory session-filename))))
 
     ;; Don't show session files in recentf list and so on
-    (+ignore-root x-win-dir))
-
-  ;; https://anirudhsasikumar.net/blog/2005.01.21.html
-  (define-minor-mode +sensitive-data-mode
-    "For sensitive files like password lists.
-
-It disables backup creation and auto saving."
-    ;; The initial value.
-    :init-value nil
-    ;; The indicator for the mode line.
-    :lighter " Sensitive"
-    ;; The minor mode bindings.
-    :keymap nil
-    (if +sensitive-data-mode
-        (progn
-          ;; Disable backups
-          (setq-local backup-inhibited t)
-          ;; Disable auto-save
-          (when auto-save-default (auto-save-mode -1))
-          ;; Disable super-save
-          (when (bound-and-true-p super-save-mode) (super-save-mode -1)))
-      ;; Restore to default value of backup-inhibited
-      (kill-local-variable 'backup-inhibited)
-      ;; Restore to default auto save setting
-      (when auto-save-default (auto-save-mode 1)))))
+    (+ignore-root x-win-dir)))
 
 (use-package minibuffer
+  :hook (minibuffer-setup . cursor-intangible-mode)
   :custom
   ;; Ignores case when completing files names
   (read-file-name-completion-ignore-case t)
   ;; More info on completions
-  (completions-detailed t))
+  (completions-detailed t)
+  ;; Do not allow the cursor in the minibuffer prompt (goes with `cursor-intangible-mode')
+  (minibuffer-prompt-properties '(read-only t cursor-intangible t face minibuffer-prompt)))
+
+(use-package crm
+  :config
+  ;; From: https://github.com/a-schaefers/spartan-emacs/blob/main/spartan-layers/spartan-vertico.el
+  ;; Add prompt indicator to `completing-read-multiple'. We display [CRM<separator>], e.g., [CRM,] if the separator is a comma.
+  (advice-add
+   #'completing-read-multiple :filter-args
+   (satch-defun +crm--indicator:filter-args-a (args)
+     (cons (format "[CRM%s] %s" (replace-regexp-in-string "\\`\\[.*?]\\*\\|\\[.*?]\\*\\'" "" crm-separator) (car args)) (cdr args)))))
 
 (use-package transient
   :straight t
+  :autoload transient-define-prefix transient-define-infix transient-define-suffix
   ;; Map ESC and q to quit transient
   :bind (:map
          transient-map
          ("q" . transient-quit-one)
          ("<escape>" . transient-quit-one)))
-
-;; Due to a bug in Emacs 29.1, you must apply the following change prior
-;; installation or upgrading TRAMP 2.7.0 from GNU ELPA:
-;; gnu.org/software/tramp/#ELPA-Installation
-(when-let ((_ (version= emacs-version "29.1"))
-           (dir (+package-download-from-urls
-                 'emacs-29.1-loaddefs-gen-fix
-                 "https://git.savannah.gnu.org/cgit/emacs.git/plain/lisp/emacs-lisp/loaddefs-gen.el?h=emacs-29")))
-  (with-temp-buffer
-    (insert-file-contents (expand-file-name "loaddefs-gen.el" dir))
-    (eval-region (point-min) (point-max))))
 
 (use-package tramp
   :straight t
@@ -301,7 +280,7 @@ It disables backup creation and auto saving."
 
 (use-package epa-file
   :after minemacs-first-file
-  :demand t
+  :demand
   :config
   (+shutup! (epa-file-enable)))
 
@@ -311,7 +290,45 @@ It disables backup creation and auto saving."
   :hook (dired-mode . turn-on-gnus-dired-mode)
   :custom
   (dired-dwim-target t)
-  (dired-auto-revert-buffer t))
+  (dired-auto-revert-buffer t)
+  (dired-recursive-copies 'always)
+  (dired-recursive-deletes 'top)
+  (dired-clean-confirm-killing-deleted-buffers nil))
+
+(use-package dired-aux
+  :custom
+  (dired-vc-rename-file t)
+  (dired-create-destination-dirs 'ask))
+
+(use-package dired-x
+  :hook (dired-mode . dired-omit-mode)
+  :custom
+  (dired-omit-verbose nil)
+  :config
+  (+map-local! :keymaps 'dired-mode-map
+    "h" #'dired-omit-mode)
+
+  (cl-callf concat dired-omit-files
+    "\\|^\\.\\(?:svn\\|git\\|hg\\|repo\\)\\'"
+    "\\|^\\.DS_Store\\'"
+    "\\|^flycheck_.*"
+    "\\|^\\.ccls-cache\\'"
+    "\\|^\\.tags\\'"
+    "\\|\\(?:\\.js\\)?\\.meta\\'"
+    "\\|\\.\\(?:elc\\|o\\|pyo\\|swp\\|class\\)\\'")
+
+  ;; Open some files with OS' default application
+  (when-let (cmd (cond ((or os/linux os/bsd) "xdg-open") (os/mac "open") (os/win "start")))
+    (setq dired-guess-shell-alist-user
+          `(("\\.\\(?:docx\\|pdf\\|djvu\\|eps\\)\\'" ,cmd)
+            ("\\.\\(?:jpe?g\\|png\\|gif\\|xpm\\)\\'" ,cmd)
+            ("\\.\\(?:xcf\\)\\'" ,cmd)
+            ("\\.csv\\'" ,cmd)
+            ("\\.tex\\'" ,cmd)
+            ("\\.\\(?:mp4\\|mkv\\|avi\\|flv\\|rm\\|rmvb\\|ogv\\)\\(?:\\.part\\)?\\'" ,cmd)
+            ("\\.\\(?:mp3\\|flac\\)\\'" ,cmd)
+            ("\\.html?\\'" ,cmd)
+            ("\\.md\\'" ,cmd)))))
 
 (use-package doc-view
   :custom
@@ -320,15 +337,14 @@ It disables backup creation and auto saving."
 
 (use-package project
   :straight t
-  :after minemacs-loaded
-  :demand t
+  :commands project-remember-projects-under
   :hook (kill-emacs . +project-forget-zombie-projects)
   :custom
   (project-list-file (concat minemacs-local-dir "project-list.el"))
   (project-vc-extra-root-markers '(".projectile.el" ".project.el" ".project")))
 
 (use-package tab-bar
-  :hook (minemacs-after-startup . tab-bar-mode)
+  :hook (minemacs-lazy . tab-bar-mode)
   :custom
   (tab-bar-format '(tab-bar-format-history tab-bar-format-tabs tab-bar-separator))
   (tab-bar-tab-name-format-function #'+tab-bar-tab-spaced-name-format)
@@ -348,6 +364,7 @@ It disables backup creation and auto saving."
                         tab-bar-close-button)
                    ""))
        'face (funcall tab-bar-tab-face-function tab))))
+
   (with-eval-after-load 'nerd-icons
     (setq tab-bar-close-button
           (propertize (concat (nerd-icons-faicon "nf-fa-close" :height 0.5) " ")
@@ -381,8 +398,9 @@ It disables backup creation and auto saving."
      [("S" "Start" flymake-start :transient t)
       ("Q" "Quit" ignore :transient t)]])
 
-  ;; Use the session's load-path with flymake
-  (setq elisp-flymake-byte-compile-load-path (append elisp-flymake-byte-compile-load-path load-path))
+  ;; Use the session's `load-path' with flymake
+  (with-eval-after-load 'elisp-mode
+    (cl-callf append elisp-flymake-byte-compile-load-path load-path))
 
   ;; Larger right frings
   (with-eval-after-load 'fringe
@@ -505,6 +523,15 @@ It disables backup creation and auto saving."
   ;; Highlight the current line
   :hook ((prog-mode conf-mode text-mode) . hl-line-mode))
 
+(use-package cc-vars
+  :config
+  (mapc (lambda (m) (setq-default c-default-style (+alist-set (car m) (cdr m) c-default-style)))
+        '((c-mode . "k&r") (c++-mode . "k&r"))))
+
+(use-package c-ts-mode
+  :custom
+  (c-ts-mode-indent-style 'k&r))
+
 (use-package hideshow
   ;; Hide/show code blocks, a.k.a. code folding
   :hook ((prog-mode conf-mode nxml-mode) . hs-minor-mode)
@@ -513,38 +540,29 @@ It disables backup creation and auto saving."
   :config
   ;; Add extra modes support, needs functions defined in `me-code-folding'
   (unless (assq 't hs-special-modes-alist)
-    (setq hs-special-modes-alist
-          (append
-           '((vimrc-mode "{{{" "}}}" "\"")
-             (yaml-mode "\\s-*\\_<\\(?:[^:]+\\)\\_>"
-              ""
-              "#"
-              +fold-hideshow-forward-block-by-indent-fn nil)
-             (haml-mode "[#.%]" "\n" "/" +fold-hideshow-haml-forward-sexp-fn nil)
-             (ruby-mode "class\\|d\\(?:ef\\|o\\)\\|module\\|[[{]"
-              "end\\|[]}]"
-              "#\\|=begin"
-              ruby-forward-sexp)
-             (matlab-mode "if\\|switch\\|case\\|otherwise\\|while\\|for\\|try\\|catch"
-              "end"
-              nil (lambda (_arg) (matlab-forward-sexp)))
-             (nxml-mode "<!--\\|<[^/>]*[^/]>"
-              "-->\\|</[^/>]*[^/]>"
-              "<!--" sgml-skip-tag-forward nil)
-             (latex-mode
-              ;; LaTeX-find-matching-end needs to be inside the env
-              ("\\\\begin{[a-zA-Z*]+}\\(\\)" 1)
-              "\\\\end{[a-zA-Z*]+}"
-              "%"
-              (lambda (_arg)
-                ;; Don't fold whole document, that's useless
-                (unless (save-excursion
-                          (search-backward "\\begin{document}"
-                           (line-beginning-position) t))
-                 (LaTeX-find-matching-end)))
-              nil))
-           hs-special-modes-alist
-           '((t))))))
+    (cl-callf2 append
+        '((vimrc-mode "{{{" "}}}" "\"")
+          (ruby-mode "class\\|d\\(?:ef\\|o\\)\\|module\\|[[{]"
+           "end\\|[]}]"
+           "#\\|=begin"
+           ruby-forward-sexp)
+          (matlab-mode "if\\|switch\\|case\\|otherwise\\|while\\|for\\|try\\|catch"
+           "end"
+           nil (lambda (_arg) (matlab-forward-sexp)))
+          (nxml-mode "<!--\\|<[^/>]*[^/]>"
+           "-->\\|</[^/>]*[^/]>"
+           "<!--" sgml-skip-tag-forward nil)
+          (latex-mode
+           ;; LaTeX-find-matching-end needs to be inside the env
+           ("\\\\begin{[a-zA-Z*]+}\\(\\)" 1)
+           "\\\\end{[a-zA-Z*]+}"
+           "%"
+           (lambda (_arg)
+             ;; Don't fold whole document, that's useless
+             (unless (save-excursion (search-backward "\\begin{document}" (line-beginning-position) t))
+              (LaTeX-find-matching-end)))
+           nil))
+        hs-special-modes-alist '((t)))))
 
 (use-package xref
   :straight t
@@ -596,7 +614,16 @@ It disables backup creation and auto saving."
       "--pch-storage=memory")
     "ccls")
 
-  (+eglot-register '(awk-mode awk-ts-mode) "awk-language-server"))
+  (+eglot-register '(awk-mode awk-ts-mode) "awk-language-server")
+
+  ;; Optimization from Doom Emacs
+  ;; NOTE: This setting disable the `eglot-events-buffer' enabling more
+  ;; consistent performance on long running Emacs instance. Default is 2000000
+  ;; lines. After each new event the whole buffer is pretty printed which causes
+  ;; steady performance decrease over time. CPU is spent on pretty priting and
+  ;; Emacs GC is put under high pressure.
+  (unless minemacs-debug-p
+    (cl-callf plist-put eglot-events-buffer-config :size 0)))
 
 (use-package eldoc
   :straight t
@@ -616,6 +643,7 @@ It disables backup creation and auto saving."
   :commands +toggle-bury-compilation-buffer-if-successful
   ;; Enable ANSI colors in compilation buffer
   :hook (compilation-filter . ansi-color-compilation-filter)
+  :hook (shell-mode . compilation-shell-minor-mode)
   :custom
   (compilation-scroll-output t) ; Keep scrolling the compilation buffer, `first-error' can be interesting
   (compilation-always-kill t) ; Always kill current compilation process before starting a new one
@@ -668,12 +696,12 @@ It disables backup creation and auto saving."
 (use-package vhdl-mode
   :config
   ;; Setup vhdl_ls from rust_hdl (AUR: rust_hdl-git)
-  (+eglot-register 'vhdl-mode "vhdl_ls"))
+  (+eglot-register '(vhdl-mode vhdl-ts-mode) "vhdl_ls"))
 
 (use-package verilog-mode
   :config
   ;; Setup Verilog/SystemVerilog LSP servers
-  (+eglot-register 'verilog-mode "svls" "verible-verilog-ls" "svlangserver"))
+  (+eglot-register '(verilog-mode verilog-ts-mode) "svls" "verible-verilog-ls" "svlangserver"))
 
 (use-package nxml-mode
   :mode "\\.xmpi\\'"
@@ -682,23 +710,14 @@ It disables backup creation and auto saving."
 
 (use-package elisp-mode
   :after minemacs-first-elisp-file ; prevent elisp-mode from being loaded too early
+  :custom-face ; better the default cyan color!
+  (elisp-shorthand-font-lock-face ((t :inherit font-lock-keyword-face :foreground "red")))
   :init
   (+map-local! :keymaps '(emacs-lisp-mode-map lisp-interaction-mode-map ielm-map lisp-mode-map racket-mode-map scheme-mode-map)
     "p" #'check-parens)
   (+setq-hook! emacs-lisp-mode tab-width 8) ; to view built-in packages correctly
   :config
   (+map-local! :keymaps '(emacs-lisp-mode-map lisp-interaction-mode-map)
-    "d"   '(nil :wk "edebug")
-    "df"  #'edebug-defun
-    "dF"  #'edebug-all-forms
-    "dd"  #'edebug-all-defs
-    "dr"  #'edebug-remove-instrumentation
-    "do"  #'edebug-on-entry
-    "dO"  #'edebug-cancel-on-entry
-    "db"  '(nil :wk "breakpoints")
-    "dbb" #'edebug-set-breakpoint
-    "dbr" #'edebug-unset-breakpoint
-    "dbn" #'edebug-next-breakpoint
     "e"   '(nil :wk "eval")
     "eb"  #'eval-buffer
     "ed"  #'eval-defun
@@ -716,224 +735,31 @@ It disables backup creation and auto saving."
     "cc"  #'elisp-byte-compile-buffer
     "cf"  #'elisp-byte-compile-file
     "cn"  #'emacs-lisp-native-compile-and-load
-    "cb"  #'emacs-lisp-byte-compile-and-load)
+    "cb"  #'emacs-lisp-byte-compile-and-load))
+
+(use-package edebug
+  :after elisp-mode
+  :custom
+  (edebug-inhibit-emacs-lisp-mode-bindings t)
+  :init
+  (+map-local! :keymaps '(emacs-lisp-mode-map lisp-interaction-mode-map)
+    "d"   '(nil :wk "edebug")
+    "df"  #'edebug-defun
+    "dF"  #'edebug-all-forms
+    "dd"  #'edebug-all-defs
+    "dr"  #'edebug-remove-instrumentation
+    "do"  #'edebug-on-entry
+    "dO"  #'edebug-cancel-on-entry
+    "db"  '(nil :wk "breakpoints")
+    "dbb" #'edebug-set-breakpoint
+    "dbr" #'edebug-unset-breakpoint
+    "dbn" #'edebug-next-breakpoint)
+
   (+map-local! :keymaps '(edebug-mode-map)
     "e"   '(nil :wk "eval")
     "ee"  #'edebug-eval-last-sexp
     "eE"  #'edebug-eval-expression
-    "et"  #'edebug-eval-top-level-form)
-
-  (defvar +emacs-lisp--face nil)
-  (defvar +calculate-lisp-indent-check-for-keyword nil)
-  (autoload #'ad-get-orig-definition "advice")
-
-  ;; Extracted from:
-  ;; github.com/doomemacs/doomemacs/blob/master/modules/lang/emacs-lisp/autoload.el
-  (defun +emacs-lisp--highlight-vars-and-faces (end)
-    "Match defined variables and functions.
-Functions are differentiated into \"special forms\", \"built-in functions\" and
-\"library/userland functions\"."
-    (catch 'matcher
-      (while (re-search-forward "\\(?:\\sw\\|\\s_\\)+" end t)
-        (let ((ppss (save-excursion (syntax-ppss))))
-          (cond ((nth 3 ppss)  ; strings
-                 (search-forward "\"" end t))
-                ((nth 4 ppss)  ; comments
-                 (forward-line +1))
-                ((let ((symbol (intern-soft (match-string-no-properties 0))))
-                   (and (cond ((null symbol) nil)
-                              ((eq symbol t) nil)
-                              ((keywordp symbol) nil)
-                              ((special-variable-p symbol)
-                               (setq +emacs-lisp--face 'font-lock-variable-name-face))
-                              ((and (fboundp symbol)
-                                    (eq (char-before (match-beginning 0)) ?\()
-                                    (not (memq (char-before (1- (match-beginning 0)))
-                                               (list ?\' ?\`))))
-                               (let ((unaliased (indirect-function symbol)))
-                                 (unless (or (macrop unaliased)
-                                             (special-form-p unaliased))
-                                   (let (unadvised)
-                                     (while (not (eq (setq unadvised (ad-get-orig-definition unaliased))
-                                                     (setq unaliased (indirect-function unadvised)))))
-                                     unaliased)
-                                   (setq +emacs-lisp--face
-                                         (if (subrp unaliased)
-                                             'font-lock-constant-face
-                                           'font-lock-function-name-face))))))
-                        (throw 'matcher t)))))))
-      nil))
-
-  ;; Taken from:
-  ;; reddit.com/r/emacs/comments/d7x7x8/finally_fixing_indentation_of_quoted_lists
-  (defun +emacs-lisp--calculate-lisp-indent:override-a (&optional parse-start)
-    "Add better indentation for quoted and backquoted lists."
-    ;; The `calculate-lisp-indent-last-sexp' is defined with `defvar' with it's
-    ;; value omitted, marking it special and only defining it locally. So if you
-    ;; don't have this, you'll get a void variable error.
-    (defvar calculate-lisp-indent-last-sexp)
-    (save-excursion
-      (beginning-of-line)
-      (let ((indent-point (point))
-            ;; Setting this to a number inhibits calling hook
-            (desired-indent nil)
-            (retry t)
-            state calculate-lisp-indent-last-sexp containing-sexp)
-        (cond ((or (markerp parse-start) (integerp parse-start))
-               (goto-char parse-start))
-              ((null parse-start) (beginning-of-defun))
-              (t (setq state parse-start)))
-        (unless state
-          ;; Find outermost containing sexp
-          (while (< (point) indent-point)
-            (setq state (parse-partial-sexp (point) indent-point 0))))
-        ;; Find innermost containing sexp
-        (while (and retry state (> (elt state 0) 0))
-          (setq retry nil
-                containing-sexp (elt state 1)
-                calculate-lisp-indent-last-sexp (elt state 2))
-          ;; Position following last unclosed open.
-          (goto-char (1+ containing-sexp))
-          ;; Is there a complete sexp since then?
-          (if (and calculate-lisp-indent-last-sexp (> calculate-lisp-indent-last-sexp (point)))
-              ;; Yes, but is there a containing sexp after that?
-              (let ((peek (parse-partial-sexp calculate-lisp-indent-last-sexp indent-point 0)))
-                (if (setq retry (car (cdr peek))) (setq state peek)))))
-        (unless retry
-          ;; Innermost containing sexp found
-          (goto-char (1+ containing-sexp))
-          (if (not calculate-lisp-indent-last-sexp)
-              ;; `indent-point' immediately follows open paren. Don't call hook.
-              (setq desired-indent (current-column))
-            ;; Find the start of first element of containing sexp.
-            (parse-partial-sexp (point) calculate-lisp-indent-last-sexp 0 t)
-            (cond ((looking-at "\\s("))
-                  ;; First element of containing sexp is a list. Indent under that
-                  ;; list.
-                  ((> (save-excursion (forward-line 1) (point)) calculate-lisp-indent-last-sexp)
-                   ;; This is the first line to start within the containing sexp.
-                   ;; It's almost certainly a function call.
-                   (if (or
-                        ;; Containing sexp has nothing before this line except the
-                        ;; first element. Indent under that element.
-                        (= (point) calculate-lisp-indent-last-sexp)
-
-                        ;; First sexp after `containing-sexp' is a keyword. This
-                        ;; condition is more debatable. It's so that I can have
-                        ;; unquoted plists in macros. It assumes that you won't
-                        ;; make a function whose name is a keyword.
-                        (and +calculate-lisp-indent-check-for-keyword
-                             (when-let (char-after (char-after (1+ containing-sexp)))
-                               (char-equal char-after ?:)))
-
-                        ;; Check for quotes or backquotes around.
-                        (let* ((positions (elt state 9))
-                               (last (car (last positions)))
-                               (rest (reverse (butlast positions)))
-                               (any-quoted-p nil)
-                               (point nil))
-                          (or
-                           (when-let (char (char-before last))
-                             (or (char-equal char ?')
-                                 (char-equal char ?`)))
-                           (progn
-                             (while (and rest (not any-quoted-p))
-                               (setq point (pop rest)
-                                     any-quoted-p
-                                     (or
-                                      (when-let (char (char-before point))
-                                        (or (char-equal char ?') (char-equal char ?`)))
-                                      (save-excursion
-                                        (goto-char (1+ point))
-                                        (looking-at-p "\\(?:back\\)?quote[\t\n\f\s]+(")))))
-                             any-quoted-p))))
-                       ;; Containing sexp has nothing before this line except the
-                       ;; first element. Indent under that element.
-                       nil
-                     ;; Skip the first element, find start of second (the first
-                     ;; argument of the function call) and indent under.
-                     (progn (forward-sexp 1)
-                            (parse-partial-sexp (point) calculate-lisp-indent-last-sexp 0 t)))
-                   (backward-prefix-chars))
-                  (t
-                   ;; Indent beneath first sexp on same line as
-                   ;; `calculate-lisp-indent-last-sexp'. Again, it's almost
-                   ;; certainly a function call.
-                   (goto-char calculate-lisp-indent-last-sexp)
-                   (beginning-of-line)
-                   (parse-partial-sexp (point) calculate-lisp-indent-last-sexp 0 t)
-                   (backward-prefix-chars)))))
-        ;; Point is at the point to indent under unless we are inside a string.
-        ;; Call indentation hook except when overridden by `lisp-indent-offset' or
-        ;; if the desired indentation has already been computed.
-        (let ((normal-indent (current-column)))
-          (cond ((elt state 3)
-                 ;; Inside a string, don't change indentation.
-                 nil)
-                ((and (integerp lisp-indent-offset) containing-sexp)
-                 ;; Indent by constant offset
-                 (goto-char containing-sexp)
-                 (+ (current-column) lisp-indent-offset))
-                ;; in this case `calculate-lisp-indent-last-sexp' is not `nil'
-                (calculate-lisp-indent-last-sexp
-                 (or
-                  ;; try to align the parameters of a known function
-                  (and lisp-indent-function
-                       (not retry)
-                       (funcall lisp-indent-function indent-point state))
-                  ;; If the function has no special alignment or it does not apply
-                  ;; to this argument, try to align a constant-symbol under the
-                  ;; last preceding constant symbol, if there is such one of the
-                  ;; last 2 preceding symbols, in the previous uncommented line.
-                  (and (save-excursion
-                         (goto-char indent-point)
-                         (skip-chars-forward " \t")
-                         (looking-at ":"))
-                       ;; The last sexp may not be at the indentation where it
-                       ;; begins, so find that one, instead.
-                       (save-excursion
-                         (goto-char calculate-lisp-indent-last-sexp)
-                         ;; Handle prefix characters and whitespace following an
-                         ;; open paren. (Bug#1012)
-                         (backward-prefix-chars)
-                         (while (not (or (looking-back "^[ \t]*\\|([ \t]+" (line-beginning-position))
-                                         (and containing-sexp (>= (1+ containing-sexp) (point)))))
-                           (forward-sexp -1)
-                           (backward-prefix-chars))
-                         (setq calculate-lisp-indent-last-sexp (point)))
-                       (> calculate-lisp-indent-last-sexp
-                          (save-excursion
-                            (goto-char (1+ containing-sexp))
-                            (parse-partial-sexp (point) calculate-lisp-indent-last-sexp 0 t)
-                            (point)))
-                       (let ((parse-sexp-ignore-comments t)
-                             indent)
-                         (goto-char calculate-lisp-indent-last-sexp)
-                         (or (and (looking-at ":")
-                                  (setq indent (current-column)))
-                             (and (< (line-beginning-position) (prog2 (backward-sexp) (point)))
-                                  (looking-at ":")
-                                  (setq indent (current-column))))
-                         indent))
-                  ;; another symbols or constants not preceded by a constant as
-                  ;; defined above.
-                  normal-indent))
-                ;; in this case `calculate-lisp-indent-last-sexp' is `nil'
-                (desired-indent)
-                (t
-                 normal-indent))))))
-
-  ;; Override the `calculate-lisp-indent' to indent plists correctly. See:
-  ;; reddit.com/r/emacs/comments/d7x7x8/finally_fixing_indentation_of_quoted_lists/
-  (advice-add 'calculate-lisp-indent :override #'+emacs-lisp--calculate-lisp-indent:override-a)
-
-  ;; Better fontification for Emacs Lisp code (colorizes functions, ...)
-  (font-lock-add-keywords 'emacs-lisp-mode '((+emacs-lisp--highlight-vars-and-faces . +emacs-lisp--face)))
-
-  ;; HACK: Adapted from Doom. Quite a few functions here are called often, and
-  ;; so are especially performance sensitive, so we compile these functions
-  ;; on-demand.
-  (+compile-functions #'+emacs-lisp--highlight-vars-and-faces #'+emacs-lisp--calculate-lisp-indent:override-a))
+    "et"  #'edebug-eval-top-level-form))
 
 (use-package scheme
   :custom
@@ -961,7 +787,7 @@ Functions are differentiated into \"special forms\", \"built-in functions\" and
 
   (advice-add
    'gud-display-line :after
-   (defun +gud--display-overlay:after-a (true-file _line)
+   (satch-defun +gud--display-overlay:after-a (true-file _line)
      (let* ((overlay +gud-overlay)
             (buffer (gud-find-file true-file)))
        (with-current-buffer buffer
@@ -969,7 +795,7 @@ Functions are differentiated into \"special forms\", \"built-in functions\" and
 
   (add-hook
    'kill-buffer-hook
-   (defun +gud--delete-overlay-h ()
+   (satch-defun +gud--delete-overlay-h ()
      (when (derived-mode-p 'gud-mode)
        (delete-overlay +gud-overlay)))))
 
@@ -978,7 +804,8 @@ Functions are differentiated into \"special forms\", \"built-in functions\" and
   (defcustom +python-enable-pyenv nil
     "Enable integration for pyenv.
 This variable should be set early, either in \"early-config.el\" or \"init-tweaks.el\"."
-    :group 'minemacs :type 'boolean)
+    :group 'minemacs-utils
+    :type 'boolean)
   (when (and +python-enable-pyenv (executable-find "pyenv") (file-directory-p "~/.pyenv/shims/"))
     (setenv "WORKON_HOME" "~/.pyenv/versions")
     (setenv "PIPENV_PYTHON" "~/.pyenv/shims/python")
@@ -989,9 +816,11 @@ This variable should be set early, either in \"early-config.el\" or \"init-tweak
   :straight (:type built-in)
   :preface
   ;; Set to nil so we can detect user changes (in config.el)
-  (setq org-directory nil
-        ;; Fix `evil' search problem (to be used with `evil-search')
-        org-fold-core-style 'overlays)
+  (setq org-directory nil)
+  (with-eval-after-load 'evil
+    ;; Fix `evil' search problem (to be used with `evil-search')
+    (when (eq evil-search-module 'evil-search)
+      (setq org-fold-core-style 'overlays)))
   :custom
   (org-auto-align-tags nil)
   (org-clock-persist-file (concat minemacs-cache-dir "org/clock-persist.el"))
@@ -1008,7 +837,7 @@ This variable should be set early, either in \"early-config.el\" or \"init-tweak
   (org-fold-catch-invisible-edits 'smart) ; try not to accidentally do weird stuff in invisible regions
   (org-fontify-quote-and-verse-blocks t)
   (org-hide-emphasis-markers t)
-  (org-highlight-latex-and-related '(native script entities))
+  (org-highlight-latex-and-related '(native latex script entities))
   (org-id-locations-file (concat minemacs-cache-dir "org/id-locations.el"))
   (org-insert-heading-respect-content t)
   (org-list-allow-alphabetical t) ; have a. A. a) A) list bullets
@@ -1070,10 +899,7 @@ This variable should be set early, either in \"early-config.el\" or \"init-tweak
     collect (cons lang t)))
 
   (with-eval-after-load 'org-src
-    (setq org-src-lang-modes
-          (append
-           '(("dot" . graphviz-dot))
-           (delete (assoc "dot" org-src-lang-modes #'equal) org-src-lang-modes))))
+    (+alist-set "dot" 'graphviz-dot org-src-lang-modes))
 
   (with-eval-after-load 'plantuml-mode
     (setq org-plantuml-jar-path plantuml-jar-path
@@ -1122,23 +948,13 @@ This variable should be set early, either in \"early-config.el\" or \"init-tweak
 
 (use-package org-agenda
   :custom
-  (org-agenda-tags-column 0)
-  (org-agenda-block-separator ?─)
-  (org-agenda-time-grid
-   '((daily today require-timed)
-     (800 1000 1200 1400 1600 1800 2000)
-     " ┄┄┄┄┄ " "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄"))
-  (org-agenda-current-time-string
-   "⭠ now ─────────────────────────────────────────────────"))
+  (org-agenda-tags-column 0))
 
 ;; TEMP: This will solve the "Invalid face reference: org-indent [X times]"
 ;; problem.
 (use-package org-indent
   :after org
-  :demand t)
-
-(use-package ox
-  :after org)
+  :demand)
 
 (use-package ox-latex
   :after ox
@@ -1197,19 +1013,19 @@ This variable should be set early, either in \"early-config.el\" or \"init-tweak
 
 (use-package ox-koma-letter
   :after ox
-  :demand t)
+  :demand)
 
 (use-package ox-odt
   :after ox
-  :demand t)
+  :demand)
 
 (use-package ox-beamer
   :after ox
-  :demand t)
+  :demand)
 
 (use-package oc
   :after org
-  :demand t
+  :demand
   :custom
   (org-cite-export-processors '((latex biblatex) (t csl)))
   (org-support-shift-select t)
@@ -1219,16 +1035,15 @@ This variable should be set early, either in \"early-config.el\" or \"init-tweak
 
 (use-package oc-csl
   :after oc
-  :demand t)
+  :demand)
 
 (use-package oc-natbib
   :after oc
-  :demand t)
+  :demand)
 
 (use-package oc-biblatex
-  :straight (:type built-in)
   :after oc
-  :demand t)
+  :demand)
 
 (use-package electric
   :config
@@ -1247,14 +1062,14 @@ current line.")
   ;; From Doom Emacs
   (add-hook
    'electric-indent-functions
-   (defun +electric-indent-char-fn (_c)
+   (satch-defun +electric-indent-char-fn (_c)
      (when (and (eolp) +electric-indent-words)
        (save-excursion
          (backward-word)
          (looking-at-p (concat "\\<" (regexp-opt +electric-indent-words))))))))
 
 (use-package elec-pair
-  :hook (minemacs-after-startup . electric-pair-mode)
+  :hook (minemacs-first-file . electric-pair-mode)
   :init
   (defun +electric-pair-tweaks-h ()
     ;; Org mode tweaks
@@ -1289,7 +1104,7 @@ current line.")
 
   ;; Restore the saved window configuration on quit or suspend
   (+add-hook! (ediff-quit ediff-suspend) :depth 101
-    (defun +ediff--restore-window-config-h ()
+    (satch-defun +ediff--restore-window-config-h ()
       (when (window-configuration-p +ediff--saved-window-config)
         (set-window-configuration +ediff--saved-window-config)))))
 
@@ -1354,7 +1169,7 @@ current line.")
       ("q" nil :color blue))))
 
 (use-package octave
-  :mode ("\\.m\\'" . octave-mode)
+  :mode ("\\.m\\'" . octave-maybe-mode)
   :config
   (defun +octave-eval-last-sexp ()
     "Evaluate Octave sexp before point and print value into current buffer."
@@ -1377,7 +1192,9 @@ current line.")
   :custom
   (bookmark-default-file (concat minemacs-local-dir "bookmark.el"))
   ;; Save the bookmarks every time a bookmark is made
-  (bookmark-save-flag 1))
+  (bookmark-save-flag 1)
+  :config
+  (push bookmark-default-file +first-file-hook-ignore-list))
 
 (use-package calc
   :custom
@@ -1510,14 +1327,13 @@ See `+whitespace-auto-cleanup-except-current-line'."
   (global-auto-revert-non-file-buffers t))
 
 (use-package savehist
-  :hook (minemacs-after-startup . savehist-mode)
+  :hook (minemacs-lazy . savehist-mode)
   :custom
   (savehist-file (concat minemacs-local-dir "savehist.el")))
 
 (use-package saveplace
-  :init
   ;; Save place in files
-  (save-place-mode 1)
+  :hook (minemacs-first-file . save-place-mode)
   :custom
   (save-place-file (concat minemacs-local-dir "save-place.el")))
 
@@ -1527,7 +1343,7 @@ See `+whitespace-auto-cleanup-except-current-line'."
   ;; `shell-kill-buffer-on-exit').
   (advice-add
    'term-sentinel :around
-   (defun +term--kill-after-exit:around-a (orig-fn proc msg)
+   (satch-defun +term--kill-after-exit:around-a (orig-fn proc msg)
      (if (memq (process-status proc) '(signal exit))
          (let ((buffer (process-buffer proc)))
            (apply orig-fn (list proc msg))
@@ -1550,20 +1366,20 @@ See `+whitespace-auto-cleanup-except-current-line'."
   (display-line-numbers-widen t))
 
 (use-package pixel-scroll
-  :after minemacs-loaded
-  :demand t
+  :hook (minemacs-lazy . +pixel-scroll-mode)
   :custom
   ;; Better scrolling on Emacs29+, specially on a touchpad
   (pixel-scroll-precision-use-momentum t)
   :config
-  ;; Scroll pixel by pixel, in Emacs29+ there is a more pricise mode way to scroll
-  (if (>= emacs-major-version 29)
-      (pixel-scroll-precision-mode 1)
-    (pixel-scroll-mode 1)))
+  (defun +pixel-scroll-mode ()
+    ;; Scroll pixel by pixel, in Emacs29+ there is a more pricise mode way to scroll
+    (if (>= emacs-major-version 29)
+        (pixel-scroll-precision-mode 1)
+      (pixel-scroll-mode 1))))
 
 (use-package mouse
   ;; Enable context menu on mouse right click
-  :hook (minemacs-after-startup . context-menu-mode)
+  :hook (minemacs-lazy . context-menu-mode)
   :custom
   ;; Enable Drag-and-Drop of regions
   (mouse-drag-and-drop-region t)
@@ -1591,14 +1407,14 @@ See `+whitespace-auto-cleanup-except-current-line'."
 
 (use-package time
   ;; Display time in mode-line
-  :hook (minemacs-after-startup . display-time-mode)
+  :hook (minemacs-lazy . display-time-mode)
   :custom
   ;; Enable time in the mode-line
   (display-time-string-forms '((propertize (concat 24-hours ":" minutes)))))
 
 (use-package frame
   ;; Display divider between windows
-  :hook (minemacs-after-startup . window-divider-mode)
+  :hook (minemacs-lazy . window-divider-mode)
   :custom
   ;; Set line width for the divider in `window-divider-mode' to 2px
   (window-divider-default-bottom-width 2)
@@ -1609,11 +1425,12 @@ See `+whitespace-auto-cleanup-except-current-line'."
   :hook ((server-after-make-frame minemacs-after-startup) . +scratch-replace-with-persistent-scratch)
   :init
   ;; When we start in a non-daemon Emacs, we start a server when Emacs is idle.
-  (+lazy-unless! (daemonp)
-    (unless (server-running-p)
-      (let ((inhibit-message t))
-        (server-start nil t)
-        (+info! "Started Emacs daemon in background.")))))
+  (unless (daemonp)
+    (+lazy!
+     (unless (server-running-p)
+       (let ((inhibit-message t))
+         (server-start nil t)
+         (+info! "Started Emacs daemon in background."))))))
 
 (use-package speedbar ; config from Crafted Emacs
   :custom
@@ -1665,11 +1482,11 @@ Useful for quickly switching to an open buffer."
   ;; Never mix, use only spaces
   (setq-default indent-tabs-mode nil)
   ;; Show line number in mode-line
-  :hook (minemacs-after-startup . line-number-mode)
+  :hook (minemacs-lazy . line-number-mode)
   ;; Show column numbers (a.k.a. cursor position) in the mode-line
-  :hook (minemacs-after-startup . column-number-mode)
+  :hook (minemacs-lazy . column-number-mode)
   ;; Display buffer size on mode line
-  :hook (minemacs-after-startup . size-indication-mode)
+  :hook (minemacs-lazy . size-indication-mode)
   ;; Wrap long lines
   :hook ((prog-mode conf-mode text-mode) . visual-line-mode)
   :custom
@@ -1685,19 +1502,19 @@ Useful for quickly switching to an open buffer."
 
 (use-package winner
   ;; Window layout undo/redo (`winner-undo' / `winner-redo')
-  :hook (minemacs-after-startup . winner-mode))
+  :hook (minemacs-lazy . winner-mode))
 
 (use-package delsel
   ;; Replace selection after start typing
-  :hook (minemacs-after-startup . delete-selection-mode))
+  :hook (minemacs-lazy . delete-selection-mode))
 
 (use-package mb-depth
   ;; Show recursion depth in minibuffer (see `enable-recursive-minibuffers')
-  :hook (minemacs-after-startup . minibuffer-depth-indicate-mode))
+  :hook (minemacs-lazy . minibuffer-depth-indicate-mode))
 
 (use-package subword
   ;; Global SubWord mode
-  :hook (minemacs-after-startup . global-subword-mode))
+  :hook (minemacs-lazy . global-subword-mode))
 
 (use-package so-long
   ;; Better handling for files with so long lines
@@ -1707,20 +1524,24 @@ Useful for quickly switching to an open buffer."
   ;; Fallback the new `fido-vertical-mode' Emacs28+ builtin completion mode if
   ;; the `me-completion' (which contains `vertico-mode' configuration) core
   ;; module is not enabled.
-  :unless (and (memq 'me-completion minemacs-core-modules) (not (memq 'vertico minemacs-disabled-packages)))
-  :hook (minemacs-after-startup . fido-vertical-mode))
+  :unless (and (memq 'me-completion minemacs-core-modules) (not (+package-disabled-p 'vertico)))
+  :hook (minemacs-lazy . fido-vertical-mode))
 
 (use-package battery
-  :unless (+shutup! (let ((battery-str (battery)))
-                      (or (equal "Battery status not available" battery-str)
-                          (string-match-p "unknown" battery-str)
-                          (string-match-p "N/A" battery-str))))
+  :hook (minemacs-lazy . +display-battery-mode-maybe)
+  :init
   ;; Show the battery status (if available) in the mode-line
-  :hook (minemacs-after-startup . display-battery-mode))
+  (defun +display-battery-mode-maybe ()
+    (+shutup!
+     (when-let* ((battery-str (battery))
+                 (_ (not (or (equal "Battery status not available" battery-str)
+                             (string-match-p "unknown" battery-str)
+                             (string-match-p "N/A" battery-str)))))
+       (display-battery-mode 1)))))
 
 (use-package windmove
-  :after minemacs-loaded
-  :demand t
+  :after minemacs-lazy
+  :demand
   :config
   ;; Navigate windows using Shift+Direction
   (windmove-default-keybindings 'shift))
@@ -1732,7 +1553,7 @@ Useful for quickly switching to an open buffer."
   (dolist (command '(scroll-up-command scroll-down-command recenter-top-bottom other-window))
     (advice-add
      command :after
-     (defun +pulse--line:after-a (&rest _)
+     (satch-defun +pulse--line:after-a (&rest _)
        "Pulse the current line."
        (pulse-momentary-highlight-one-line (point))))))
 

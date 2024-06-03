@@ -15,44 +15,45 @@
 (use-package treesit-auto
   :straight (:host github :repo "renzmann/treesit-auto")
   :when (+emacs-features-p 'tree-sitter)
-  :hook (minemacs-after-startup . global-treesit-auto-mode)
-  :hook (minemacs-first-file . +treesit-enable-available-grammars-on-normal-modes)
   :hook (minemacs-build-functions . treesit-auto-install-all)
+  :commands global-treesit-auto-mode
   :custom
   (treesit-auto-install 'prompt)
+  :init
+  (+hook-once! prog-mode-hook
+    (global-treesit-auto-mode 1)
+    (+treesit-enable-available-grammars-on-normal-modes))
   :config
-  ;; Remove the grammar of HTML to use a specific revision (for `html-ts-mode')
-  (setq treesit-auto-recipe-list (cl-remove 'html treesit-auto-recipe-list :key #'treesit-auto-recipe-lang))
-  (setq treesit-auto-langs (append treesit-auto-langs '(nix xml elisp))
-        treesit-auto-recipe-list
-        (append
-         treesit-auto-recipe-list
-         (list (make-treesit-auto-recipe
-                :lang 'nix
-                :ts-mode 'nix-ts-mode
-                :remap 'nix-mode
-                :url "https://github.com/nix-community/tree-sitter-nix"
-                :ext "\\.nix\\'")
-               (make-treesit-auto-recipe
-                :lang 'xml
-                :ts-mode 'xml-ts-mode
-                :remap '(nxml-mode xml-mode)
-                :url "https://github.com/ObserverOfTime/tree-sitter-xml"
-                :source-dir "tree-sitter-xml/src"
-                :ext "\\.xml\\'")
-               (make-treesit-auto-recipe
-                :lang 'elisp
-                :ts-mode 'emacs-lisp-ts-mode
-                :remap 'emacs-lisp-mode
-                :url "https://github.com/Wilfred/tree-sitter-elisp"
-                :ext "\\.el\\'")
-               (make-treesit-auto-recipe
-                :lang 'html
-                :ts-mode 'html-ts-mode
-                :remap '(mhtml-mode sgml-mode)
-                :revision "v0.20.1"
-                :url "https://github.com/tree-sitter/tree-sitter-html"
-                :ext "\\.html\\'"))))
+  (let ((extra-recipes (list (make-treesit-auto-recipe
+                              :lang 'xml
+                              :ts-mode 'xml-ts-mode
+                              :remap '(nxml-mode xml-mode)
+                              :url "https://github.com/tree-sitter-grammars/tree-sitter-xml"
+                              :source-dir "xml/src"
+                              :ext "\\.xml\\'")
+                             (make-treesit-auto-recipe
+                              :lang 'llvm
+                              :ts-mode 'llvm-ts-mode
+                              :remap 'llvm-mode
+                              :url "https://github.com/benwilliamgraham/tree-sitter-llvm"
+                              :ext "\\.ll\\'")
+                             (make-treesit-auto-recipe
+                              :lang 'zig
+                              :ts-mode 'zig-ts-mode
+                              :remap 'zig-mode
+                              :url "https://github.com/GrayJack/tree-sitter-zig"
+                              :ext "\\.\\(zig\\|zon\\)\\'")
+                             (make-treesit-auto-recipe
+                              :lang 'elisp
+                              :ts-mode 'emacs-lisp-ts-mode
+                              :remap 'emacs-lisp-mode
+                              :url "https://github.com/Wilfred/tree-sitter-elisp"
+                              :ext "\\.el\\'"))))
+    (cl-callf append treesit-auto-langs (mapcar #'treesit-auto-recipe-lang extra-recipes))
+    (cl-callf append treesit-auto-recipe-list extra-recipes))
+
+  ;; Ensure that installed tree-sitter languages have their corresponding `x-ts-mode' added to `auto-mode-alist'
+  (treesit-auto-add-to-auto-mode-alist 'all)
 
   ;; Make `treesit' parsers even in non-treesit modes, useful for packages like `expreg' and `ts-movement'
   (defun +treesit-enable-available-grammars-on-normal-modes ()
@@ -60,19 +61,21 @@
       (let ((lang (treesit-auto-recipe-lang recipe)))
         (unless (fboundp (treesit-auto-recipe-ts-mode recipe)) ;; When the `xxx-ts-mode' is not available
           (dolist (remap-mode (ensure-list (treesit-auto-recipe-remap recipe)))
-            (add-hook (intern (format "%s-hook" remap-mode))
-                      (defalias (intern (format "+treesit--enable-on-%s-h" remap-mode))
-                        (lambda ()
-                          (when (and (treesit-available-p) (treesit-language-available-p lang))
-                            (treesit-parser-create lang)))))))))))
+            (let ((fn-name (intern (format "+treesit--enable-on-%s-h" remap-mode)))
+                  (hook-name (intern (format "%s-hook" remap-mode))))
+              (defalias fn-name
+                (lambda ()
+                  (when (and (treesit-available-p) (treesit-language-available-p lang))
+                    (treesit-parser-create lang))))
+              (add-hook hook-name fn-name))))))))
 
 (use-package evil-textobj-tree-sitter
   :straight (:host github :repo "meain/evil-textobj-tree-sitter" :files (:defaults "queries" "treesit-queries"))
   :unless (+package-disabled-p 'evil 'me-evil)
-  :after evil
+  :after evil minemacs-first-file
   :init
   ;; Require the package on the first `prog-mode' file
-  (+hook-once! prog-mode-hook (with-eval-after-load 'evil (require 'evil-textobj-tree-sitter)))
+  (+hook-once! prog-mode-hook (require 'evil-textobj-tree-sitter))
   :config
   ;; Goto start of next function
   (define-key evil-normal-state-map (kbd "]f") (+cmdfy! (evil-textobj-tree-sitter-goto-textobj "function.outer")))
@@ -137,84 +140,6 @@
   (keymap-set combobulate-key-map "M-S-<left>" #'combobulate-yeet-forward)
   (keymap-set combobulate-key-map "M-S-<down>" #'combobulate-yoink-forward))
 
-(use-package citre
-  :straight t
-  :after minemacs-first-c/c++-file
-  :demand t
-  :custom
-  ;; Better (!) project root detection function
-  (citre-project-root-function #'+citre-recursive-project-root)
-  ;; Use the project root by default to create the tags file and run the indexing command
-  (citre-use-project-root-when-creating-tags t)
-  :init
-  (defvar +citre-recursive-root-project-detection-files '(".tags/" ".repo/" ".citre_root"))
-  (defvar +citre-gtags-recursive-files-list t)
-  (defvar +citre-gtags-files-list-suffixes '("*.[chly]" "*.[ch]xx" "*.[ch]pp" "*.[ch]++" "*.cc" "*.hh"))
-  (defvar +citre-gtags-files-list-ignored-directories '("CVS" "RCS" "SCCS" ".git" ".hg" ".bzr" ".cdv" ".pc" ".svn" ".repo" "_MTN" "_darcs" "_sgbak" "debian"))
-  :config
-  (defun +citre-recursive-project-root ()
-    "Search recursively until we find one of `+citre-recursive-root-project-detection-files'.
-Fall back to the default `citre--project-root'."
-    (or (+directory-root-containing-file +citre-recursive-root-project-detection-files)
-        (citre--project-root))) ; Fall back to the default detection!
-
-  (defun +citre-gtags-find-files-command (&optional dir)
-    (let* ((default-directory (or dir default-directory)))
-      (concat
-       "echo 'Creating list of files to index ...'\n"
-       (find-cmd
-        (unless +citre-gtags-recursive-files-list '(maxdepth "1"))
-        `(prune (and (type "d") (name ,@+citre-gtags-files-list-ignored-directories)))
-        `(iname ,@+citre-gtags-files-list-suffixes)
-        '(type "f" "l")
-        '(print))
-       " > gtags.files\n"
-       "echo 'Creating list of files to index ... done'\n")))
-
-  (defun +citre-gtags-create-list-of-files-to-index (top-directory)
-    "Create a list of files to index in TOP-DIRECTORY."
-    (interactive "DCreate file list in directory: ")
-    (let* ((default-directory top-directory))
-      (start-process-shell-command "+citre-gtags-files-list" "*+citre-gtags-files-list*" (+citre-gtags-find-files-command)))))
-
-(use-package citre-config
-  :straight citre
-  :after citre
-  :demand t)
-
-(use-package xcscope
-  :straight t
-  :unless os/win
-  :commands cscope-create-list-of-files-to-index cscope-index-files)
-
-(use-package clink
-  :straight (:host github :repo "abougouffa/clink.el")
-  :when (+emacs-features-p 'sqlite3)
-  :hook (minemacs-first-file . global-clink-mode))
-
-(use-package rtags
-  :straight t)
-
-(use-package rtags-xref
-  :straight t
-  :commands rtags-xref-enable)
-
-(use-package rscope
-  :straight (:host github :repo "rjarzmik/rscope")
-  :commands rscope-init rscope-regenerate-database)
-
-(use-package eopengrok
-  :straight t
-  :commands
-  eopengrok-mode eopengrok-find-reference eopengrok-find-text eopengrok-find-definition eopengrok-find-custom
-  eopengrok-jump-to-source eopengrok-create-index eopengrok-create-index-with-enable-projects
-  :config
-  (+nmap! :keymaps 'eopengrok-mode-map
-    "n" #'eopengrok-next-line
-    "p" #'eopengrok-previous-line
-    "q" #'eopengrok-quit
-    "RET" #'eopengrok-jump-to-source))
-
 (use-package srefactor
   :straight t)
 
@@ -227,7 +152,7 @@ Fall back to the default `citre--project-root'."
   :config
   ;; Provide `consult-lsp' functionality from `consult-eglot', useful for
   ;; packages that relays on `consult-lsp' (like `dirvish-subtree').
-  (unless (or (not (+package-disabled-p 'lsp-mode 'me-lsp)) (fboundp 'consult-lsp-file-symbols))
+  (unless (or (not (+package-disabled-p 'lsp-mode 'obsolete/me-lsp)) (fboundp 'consult-lsp-file-symbols))
     (defalias 'consult-lsp-file-symbols #'consult-eglot-symbols)))
 
 (use-package eldoc-box
@@ -239,6 +164,9 @@ Fall back to the default `citre--project-root'."
     (when (display-graphic-p)
       (eldoc-box-hover-at-point-mode arg))))
 
+(use-package reformatter
+  :straight t)
+
 (use-package apheleia
   :straight t
   :custom
@@ -247,7 +175,7 @@ Fall back to the default `citre--project-root'."
   (+map! "cff" #'apheleia-format-buffer)
   (defvar +xmllint-indent "    ")
   :config
-  (add-hook 'nxml-mode-hook (defun +xmllint--set-indent-h () (setenv "XMLLINT_INDENT" +xmllint-indent)))
+  (add-hook 'nxml-mode-hook (satch-defun +xmllint--set-indent-h () (setenv "XMLLINT_INDENT" +xmllint-indent)))
   (push '(nxml-mode . xmllint) apheleia-mode-alist))
 
 (use-package editorconfig
@@ -280,22 +208,6 @@ Fall back to the default `citre--project-root'."
     "cqc" #'quickrun-compile-only
     "cqC" #'quickrun-compile-only-select
     "cqd" #'quickrun-select-default))
-
-(use-package pyvenv
-  :straight t)
-
-(use-package pyenv
-  :straight (:host github :repo "aiguofer/pyenv.el")
-  :hook (minemacs-first-python-file . +global-pyenv-mode-maybe)
-  :custom
-  (pyenv-show-active-python-in-modeline nil)
-  :config
-  (defun +global-pyenv-mode-maybe (&optional arg)
-    "Enable `pyenv-global-mode' if it can be enabled."
-    (interactive (list (if current-prefix-arg (prefix-numeric-value current-prefix-arg) 'toggle)))
-    (if (file-executable-p pyenv-executable)
-        (global-pyenv-mode arg)
-      (+log! "The %S file doesn't exist or is not executable, `pyenv' cannot be enabled." pyenv-executable))))
 
 (use-package gitlab-ci-mode
   :straight t)
@@ -331,48 +243,25 @@ Fall back to the default `citre--project-root'."
 
 (use-package dumb-jump
   :straight t
-  :commands +dumb-jump-hydra/body
+  :after xref
   :custom
   (dumb-jump-selector 'completing-read)
   :init
-  (+map!
-    "cj" '(+dumb-jump-hydra/body :wk "+dumb-jump-hydra"))
-  ;; Use as xref backend
-  (with-eval-after-load 'xref
-    (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
-  :config
-  ;; Define Hydra keybinding (from the repo's examples)
-  (defhydra +dumb-jump-hydra (:color blue :hint nil :foreign-keys warn)
-    "
-[Dumb Jump]                                                                         [_q_] quit
-  ├─────────────────────────────────────────────────────────────────────────────────────────╮
-  │  [_j_] Go          [_o_] Go other window    [_e_] Go external   [_x_] Go external other window  │
-  │  [_i_] Go prompt   [_l_] Quici look         [_b_] Back                                        │
-  ╰─────────────────────────────────────────────────────────────────────────────────────────╯
-"
-    ("j" dumb-jump-go)
-    ("o" dumb-jump-go-other-window)
-    ("e" dumb-jump-go-prefer-external)
-    ("x" dumb-jump-go-prefer-external-other-window)
-    ("i" dumb-jump-go-prompt)
-    ("l" dumb-jump-quick-look)
-    ("b" dumb-jump-back)
-    ("q" nil :color blue)))
+  ;; Use `dumb-jump' as `xref' backend
+  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
 
 (use-package hl-todo
   :straight (:host github :repo "tarsius/hl-todo")
   :hook (prog-mode . hl-todo-mode)
   :config
-  (setq hl-todo-keyword-faces
-        (append
-         hl-todo-keyword-faces
-         '(("BUG"   . "#ee5555")
-           ("FIX"   . "#0fa050")
-           ("PROJ"  . "#447f44")
-           ("IDEA"  . "#0fa050")
-           ("INFO"  . "#0e9030")
-           ("TWEAK" . "#fe9030")
-           ("PERF"  . "#e09030")))))
+  (cl-callf append hl-todo-keyword-faces
+    '(("BUG"   . "#ee5555")
+      ("FIX"   . "#0fa050")
+      ("PROJ"  . "#447f44")
+      ("IDEA"  . "#0fa050")
+      ("INFO"  . "#0e9030")
+      ("TWEAK" . "#fe9030")
+      ("PERF"  . "#e09030"))))
 
 (use-package rainbow-mode
   :straight t
@@ -389,6 +278,9 @@ Fall back to the default `citre--project-root'."
   :straight (:host github :repo "rversteegen/fb-mode")
   :commands fb-mode
   :mode "\\.b\\(i\\|as\\)\\'")
+
+(use-package zig-mode
+  :straight t)
 
 (use-package franca-idl
   :straight (:host github :repo "zeph1e/franca-idl.el"))
@@ -417,24 +309,6 @@ Fall back to the default `citre--project-root'."
 (use-package eglot-booster
   :straight (:host github :repo "jdtsmith/eglot-booster"))
 
-(use-package treesitter-context
-  :straight (:host github :repo "zbelial/treesitter-context.el")
-  :when (+emacs-features-p 'tree-sitter)
-  :commands treesitter-context-mode
-  :custom
-  (treesitter-context-idle-time 0.5)
-  :config
-  (setq treesitter-context-background-color "#EEEEEE"
-        treesitter-context-border-color "#000000"))
-
-(use-package treesitter-context-fold
-  :hook (prog-mode . treesitter-context-fold-mode)
-  :when (+emacs-features-p 'tree-sitter)
-  :init
-  (+fn-inhibit-messages! treesitter-context-fold-mode)
-  :config
-  (require 'treesitter-context))
-
 (use-package breadcrumb
   :straight t)
 
@@ -442,7 +316,11 @@ Fall back to the default `citre--project-root'."
   :straight t)
 
 (use-package protobuf-ts-mode
-  :straight (:host github :repo "emacsmirror/protobuf-ts-mode")
+  :straight (:host github :repo "emacsattic/protobuf-ts-mode")
+  :when (+emacs-features-p 'tree-sitter))
+
+(use-package llvm-ts-mode
+  :straight t
   :when (+emacs-features-p 'tree-sitter))
 
 (use-package devdocs
@@ -454,6 +332,13 @@ Fall back to the default `citre--project-root'."
     "hhp" #'devdocs-peruse
     "hhs" #'devdocs-search
     "hhI" #'devdocs-install))
+
+(use-package add-node-modules-path
+  :straight t
+  :hook ((js-mode js-ts-mode js2-mode) . add-node-modules-path)
+  :config
+  (when (executable-find "pnpm")
+    (setopt add-node-modules-path-command '("pnpm bin" "pnpm bin -w"))))
 
 
 (provide 'me-prog)

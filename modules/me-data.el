@@ -53,6 +53,30 @@
     "-" #'json-decrement-number-at-point
     "f" #'json-mode-beautify))
 
+(use-package jq-mode
+  :straight t
+  :custom
+  (jq-interactive-font-lock-mode (if (+emacs-features-p 'tree-sitter) #'json-ts-mode #'json-mode))
+  :commands +yq-interactively +xq-interactively
+  :config
+  (defun +yq-interactively ()
+    "Use `jq-interactively' with \"yq\" for YAML."
+    (interactive)
+    (let ((jq-interactive-command "yq")
+          (jq-interactive-default-prompt "yq: ")
+          (jq-interactive-font-lock-mode (if (+emacs-features-p 'tree-sitter) #'yaml-ts-mode #'yaml-mode))
+          (jq-interactive-default-options "")) ;; "--yaml-roundtrip"
+      (call-interactively #'jq-interactively)))
+
+  (defun +xq-interactively ()
+    "Use `jq-interactively' with \"xq\" for XML."
+    (interactive)
+    (let ((jq-interactive-command "xq")
+          (jq-interactive-default-prompt "xq: ")
+          (jq-interactive-font-lock-mode #'nxml-mode)
+          (jq-interactive-default-options "--node -x"))
+      (call-interactively #'jq-interactively))))
+
 (use-package graphviz-dot-mode
   :straight (:files ("graphviz-dot-mode.el" "texinfo"))
   :custom
@@ -113,7 +137,7 @@
 (use-package ob-mermaid
   :straight (:host github :repo "arnm/ob-mermaid")
   :after minemacs-first-org-file ob
-  :demand t
+  :demand
   :config
   (org-babel-do-load-languages
    'org-babel-load-languages
@@ -138,7 +162,7 @@
 (use-package ob-d2
   :straight t
   :after minemacs-first-org-file ob
-  :demand t
+  :demand
   :config
   (org-babel-do-load-languages
    'org-babel-load-languages

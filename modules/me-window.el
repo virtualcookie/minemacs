@@ -23,7 +23,7 @@
 ;; Help/info buffers
 (add-to-list
  'display-buffer-alist
- `(,(rx bol "*" (or "info" "Printing Help" "Org Entity Help" "General Keybindings" "tldr" (seq (or "Help" "helpful" "eldoc" "Tcl help" "Man " "WoMan ") (* any))) "*")
+ `(,(rx bol "*" (or "info" "Printing Help" "Org Entity Help" "General Keybindings" "tldr" (seq (or "Help" "helpful" "eldoc" "Tcl help" "Man " "WoMan " "eglot-help for ") (* any))) "*")
    (display-buffer-in-side-window)
    (slot . 0)
    (side . right)
@@ -51,9 +51,10 @@
 ;; Terminal buffers
 (add-to-list
  'display-buffer-alist
- `(,(rx bol "*" (or "eshell" "terminal" "shell" "Shell Command Output" "Async Shell Command") "*" eol)
+ `(,(rx bol "*" (or "eshell" "terminal" "shell" "Shell Command Output" "Async Shell Command" (seq "vterminal - " (* any))) "*" eol)
    (display-buffer-reuse-window display-buffer-at-bottom)
    (dedicated . t) ;; Close when finished
+   (direction . bottom)
    (reusable-frames . visible) ;;
    (window-height . 0.3)))
 

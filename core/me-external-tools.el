@@ -29,6 +29,9 @@
     (:tool yq
      :link "https://github.com/mikefarah/yq"
      :desc "A portable command-line YAML, JSON, XML, CSV, TOML and properties processor")
+    (:tool xq
+     :link "https://github.com/sibprogrammer/xq"
+     :desc "Command-line XML and HTML beautifier and content extractor")
     (:tool xmllint
      :link "https://github.com/GNOME/libxml2"
      :desc "Parse the XML files and output the result of the parsing")
@@ -188,6 +191,9 @@
     (:tool autoconf
      :link "https://www.gnu.org/software/autoconf"
      :desc "Generate configuration script")
+    (:tool tmux
+     :link "https://github.com/tmux/tmux"
+     :desc "THE terminal multiplexer")
     (:tool aspell
      :link "https://github.com/GNUAspell/aspell"
      :desc "Interactive spell checker")
@@ -232,7 +238,10 @@
      :desc "Glues together pycodestyle, pyflakes, mccabe, and third-party plugins to check the style and quality of some python code")
     (:tool sqlint
      :link "https://github.com/purcell/sqlint"
-     :desc "ItSimple SQL linter supporting ANSI and PostgreSQL syntaxes")
+     :desc "Simple SQL linter supporting ANSI and PostgreSQL syntaxes")
+    (:tool sqlite3
+     :link "https://github.com/sqlite/sqlite"
+     :desc "A C-language library that implements a small, fast, self-contained, high-reliability, full-featured, SQL database engine.")
     (:tool sql-lint
      :link "https://github.com/joereynolds/sql-lint"
      :desc "An SQL linter")

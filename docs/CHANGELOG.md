@@ -2,6 +2,457 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v6.8.2](https://github.com/abougouffa/minemacs/compare/9f70fd72f5fd04ed00f2cfce318034bee8330cd4..v6.8.2) - 2024-05-28
+#### Documentation
+- add `tmux` to the list of external dependencies - ([e53b232](https://github.com/abougouffa/minemacs/commit/e53b232c1e6db2b8d71585cf816b47491c0c59a4)) - [@abougouffa](https://github.com/abougouffa)
+#### Features
+- **(jq-mode)** add `+xq-interactively` for XML - ([297e31c](https://github.com/abougouffa/minemacs/commit/297e31c5d07ddbe36dd3fd8d333731be1c6edbb6)) - [@abougouffa](https://github.com/abougouffa)
+- **(restclient)** use my fork - ([7c5c378](https://github.com/abougouffa/minemacs/commit/7c5c3786226f2d8de47eaca5ea0a070e97a539a1)) - [@abougouffa](https://github.com/abougouffa)
+- **(services)** add initial support for `tributary` (Confluence) - ([b03a091](https://github.com/abougouffa/minemacs/commit/b03a0915b072a5aba4534993c294ca98b16cc35f)) - [@abougouffa](https://github.com/abougouffa)
+#### Tweaks
+- **(parinfer-rust)** simplify conditions, remove unnecessary (!) hacks - ([9f70fd7](https://github.com/abougouffa/minemacs/commit/9f70fd72f5fd04ed00f2cfce318034bee8330cd4)) - [@abougouffa](https://github.com/abougouffa)
+- bump packages versions - ([8b61854](https://github.com/abougouffa/minemacs/commit/8b61854f8e675adeb94833b0564bc6756d76e1ab)) - [@abougouffa](https://github.com/abougouffa)
+
+- - -
+
+## [v6.8.1](https://github.com/abougouffa/minemacs/compare/f73cea17ec10f15ca5c4ea81716f527267306cae..v6.8.1) - 2024-05-28
+#### Bug Fixes
+- **(tmux)** disable on Windows - ([98d1b9f](https://github.com/abougouffa/minemacs/commit/98d1b9fdfddb2c24a3c265c712f19da0afbc5b04)) - [@abougouffa](https://github.com/abougouffa)
+#### Tweaks
+- **(pet)** better activation condition - ([f73cea1](https://github.com/abougouffa/minemacs/commit/f73cea17ec10f15ca5c4ea81716f527267306cae)) - [@abougouffa](https://github.com/abougouffa)
+- bump packages versions - ([2c8a584](https://github.com/abougouffa/minemacs/commit/2c8a58454f201a74f58231a367c87ea5d4fabcd2)) - [@abougouffa](https://github.com/abougouffa)
+
+- - -
+
+## [v6.8.0](https://github.com/abougouffa/minemacs/compare/c65e497953c27a627fac4a0b38772de128d6be13..v6.8.0) - 2024-05-27
+#### Bug Fixes
+- **(eaf)** remove references to `minemacs-fonts` - ([c65e497](https://github.com/abougouffa/minemacs/commit/c65e497953c27a627fac4a0b38772de128d6be13)) - [@abougouffa](https://github.com/abougouffa)
+- **(valgrind)** better detection of the project root - ([57fca4b](https://github.com/abougouffa/minemacs/commit/57fca4b0c029358f78aca5934ab17d266b2be202)) - [@abougouffa](https://github.com/abougouffa)
+#### Documentation
+- **(skel)** update the modules list - ([ed97985](https://github.com/abougouffa/minemacs/commit/ed9798522d5ae0a1ff99786631e27f90d613e0d9)) - [@abougouffa](https://github.com/abougouffa)
+#### Features
+- **(jiralib2)** add `+jira-insert-ticket-link` - ([384fd38](https://github.com/abougouffa/minemacs/commit/384fd3874d1e3819d33384b5e83b7f154b6e4e87)) - [@abougouffa](https://github.com/abougouffa)
+- **(project)** add initial support for `org-jira` - ([222e9dd](https://github.com/abougouffa/minemacs/commit/222e9ddaf6e8006c6dcd7276025bd8fbead1edf6)) - [@abougouffa](https://github.com/abougouffa)
+- **(services)** add a new module for services, move `jiralib2` and `org-jira` - ([8590218](https://github.com/abougouffa/minemacs/commit/85902186a1d9e8983cf53a31730561e5d05a74ea)) - [@abougouffa](https://github.com/abougouffa)
+- **(tools)** add support for `tmux` - ([d6ba7e7](https://github.com/abougouffa/minemacs/commit/d6ba7e7f317ab2b241fcbff0596fc9c85f7b602e)) - [@abougouffa](https://github.com/abougouffa)
+- **(tools)** add support for `ob-restclient` - ([8d99771](https://github.com/abougouffa/minemacs/commit/8d99771ee1b029f3538a4c990f495645604c146c)) - [@abougouffa](https://github.com/abougouffa)
+- **(tools)** add support for `restclient-test` - ([7c20b9c](https://github.com/abougouffa/minemacs/commit/7c20b9cc95438c60a23c086cd07a8b0d738353a5)) - [@abougouffa](https://github.com/abougouffa)
+- **(tools)** add support for `restclient` - ([209bb6b](https://github.com/abougouffa/minemacs/commit/209bb6b96f4a1c3abebae2c214f8083d35de2f0f)) - [@abougouffa](https://github.com/abougouffa)
+- **(ui)** add initial support for `golden-ratio` - ([013af49](https://github.com/abougouffa/minemacs/commit/013af491f6754caa3711eebdc3ee8717d455d0aa)) - [@abougouffa](https://github.com/abougouffa)
+- move `jiralib2` from `me-vc` to `me-project` - ([3cebfc3](https://github.com/abougouffa/minemacs/commit/3cebfc374255e4ed02a8aec7070ef01b4c40c599)) - [@abougouffa](https://github.com/abougouffa)
+#### Tweaks
+- **(better-jumper)** use instead of `evil-jump-[forward/backward]` - ([c4f0a8c](https://github.com/abougouffa/minemacs/commit/c4f0a8cf1d0077d34c3486f60566306eff46fd95)) - [@abougouffa](https://github.com/abougouffa)
+- **(enlight)** don't pop as initial buff when a file is opened via args - ([cd64605](https://github.com/abougouffa/minemacs/commit/cd646056b6c09b6f558ae537a34e443642a62931)) - [@abougouffa](https://github.com/abougouffa)
+- **(evil-snipe)** minor edits - ([cbad2a9](https://github.com/abougouffa/minemacs/commit/cbad2a9623a8e748b0038421cce33abc98e388d5)) - [@abougouffa](https://github.com/abougouffa)
+- **(project-tab-groups)** use a better group naming function - ([010f58a](https://github.com/abougouffa/minemacs/commit/010f58aba380aa57f8a0dd8a42f95265a3b4e423)) - [@abougouffa](https://github.com/abougouffa)
+- minor tweaks related to profiling MinEmacs - ([4de550d](https://github.com/abougouffa/minemacs/commit/4de550d480e555fd4990fa9108c632ee2d65d935)) - [@abougouffa](https://github.com/abougouffa)
+
+- - -
+
+## [v6.7.4](https://github.com/abougouffa/minemacs/compare/ffaa6c184988ab8a791f16f78e1a225bcf18011b..v6.7.4) - 2024-05-26
+#### Tweaks
+- **(cocogitto)** better stashing on dirty work directory - ([ffaa6c1](https://github.com/abougouffa/minemacs/commit/ffaa6c184988ab8a791f16f78e1a225bcf18011b)) - [@abougouffa](https://github.com/abougouffa)
+- add group for the top level `minemacs` group - ([bb35d3f](https://github.com/abougouffa/minemacs/commit/bb35d3fa46a2af8e0dd7ce553b0df5079da5557f)) - [@abougouffa](https://github.com/abougouffa)
+
+- - -
+
+## [v6.7.3](https://github.com/abougouffa/minemacs/compare/7d3be45302a7fdacc82ea510de304f2b9d4f84b9..v6.7.3) - 2024-05-26
+#### Refactoring
+- use `+package-disabled-p` when needed - ([4dbe652](https://github.com/abougouffa/minemacs/commit/4dbe6529bfd83a47f4caec899c69d76d28c604f1)) - [@abougouffa](https://github.com/abougouffa)
+#### Tweaks
+- **(doom-modeline)** hide indent information - ([7d3be45](https://github.com/abougouffa/minemacs/commit/7d3be45302a7fdacc82ea510de304f2b9d4f84b9)) - [@abougouffa](https://github.com/abougouffa)
+- prefer lazy loading for almost all packages - ([299e340](https://github.com/abougouffa/minemacs/commit/299e3409e3972446465b4435b9a31a444dbf151c)) - [@abougouffa](https://github.com/abougouffa)
+
+- - -
+
+## [v6.7.2](https://github.com/abougouffa/minemacs/compare/4f91a0a8d32733ade1d38ae90d67ab18f6a74e09..v6.7.2) - 2024-05-26
+#### Bug Fixes
+- **(enlight)** temporary disable on Emacs 28 - ([09e6588](https://github.com/abougouffa/minemacs/commit/09e658811e464680eff697249ae41fb79a45b21b)) - [@abougouffa](https://github.com/abougouffa)
+#### Tweaks
+- **(doom-modeline)** minor tweaks - ([4f91a0a](https://github.com/abougouffa/minemacs/commit/4f91a0a8d32733ade1d38ae90d67ab18f6a74e09)) - [@abougouffa](https://github.com/abougouffa)
+- bump packages versions - ([9cbe61f](https://github.com/abougouffa/minemacs/commit/9cbe61fe5b0dd6c550a6b354e3f96fb24e306bbc)) - [@abougouffa](https://github.com/abougouffa)
+
+- - -
+
+## [v6.7.1](https://github.com/abougouffa/minemacs/compare/41b7f6c16c5ac3e4490d2ad3ea5c28dd5d5cf843..v6.7.1) - 2024-05-26
+#### Features
+- **(core-ui)** move to `light-dashboard` successor `enlight` [#168] - ([41b7f6c](https://github.com/abougouffa/minemacs/commit/41b7f6c16c5ac3e4490d2ad3ea5c28dd5d5cf843)) - [@abougouffa](https://github.com/abougouffa)
+
+- - -
+
+## [v6.7.0](https://github.com/abougouffa/minemacs/compare/11f30450973c69fc05d878a834afe731be5e2269..v6.7.0) - 2024-05-26
+#### Bug Fixes
+- **(project-tab-groups)** correctly set tab group naming function - ([977fbab](https://github.com/abougouffa/minemacs/commit/977fbabe69a581ad075311d92ac27a048edea411)) - [@abougouffa](https://github.com/abougouffa)
+#### Features
+- **(ai)** initial support for `elisa` - ([0fe89d2](https://github.com/abougouffa/minemacs/commit/0fe89d2b6ff406638e66a5dc4eac53e1a14652e1)) - [@abougouffa](https://github.com/abougouffa)
+- **(init)** add benchmarking option using `benchmark-init` - ([7ab3307](https://github.com/abougouffa/minemacs/commit/7ab3307d9e668dc48dae930cf91bce6d848ad24c)) - [@abougouffa](https://github.com/abougouffa)
+- **(project)** add support for `project-x` - ([6e1c164](https://github.com/abougouffa/minemacs/commit/6e1c164d3539b72a41cee16fb206773d0238e399)) - [@abougouffa](https://github.com/abougouffa)
+- **(vc)** add support for `magit-file-icons` - ([efb7c4f](https://github.com/abougouffa/minemacs/commit/efb7c4f04cddb6bceb034331a0df78b0c3a963d6)) - [@abougouffa](https://github.com/abougouffa)
+- **(workspaces)** add support for `project-tab-groups` - ([e8e9d50](https://github.com/abougouffa/minemacs/commit/e8e9d507c59343a85e6c068ae60a28470ca71a6e)) - [@abougouffa](https://github.com/abougouffa)
+- **(workspaces)** make `tabspaces` obsolete - ([313d2ff](https://github.com/abougouffa/minemacs/commit/313d2ffb8a6c9a5bf2ab205f114b49a34bbdf357)) - [@abougouffa](https://github.com/abougouffa)
+- better lazy loading! - ([f2271f6](https://github.com/abougouffa/minemacs/commit/f2271f6e6ee705cbafdf90ab4f5c8a291942716d)) - [@abougouffa](https://github.com/abougouffa)
+#### Refactoring
+- make use of the builtin `locate-dominating-file` - ([9fcac8f](https://github.com/abougouffa/minemacs/commit/9fcac8fcaa9896b65c0dbe7b39193e27aa24b759)) - [@abougouffa](https://github.com/abougouffa)
+- refactor and make use of `cl-callf` when possible - ([1658153](https://github.com/abougouffa/minemacs/commit/165815307395de20bd15391ceb527f5738442d01)) - [@abougouffa](https://github.com/abougouffa)
+#### Tweaks
+- **(eros)** minor edit - ([3cdda14](https://github.com/abougouffa/minemacs/commit/3cdda14f33cf537d1e3d6a94c64bdb19aba70518)) - [@abougouffa](https://github.com/abougouffa)
+- **(gc)** minor tweaks and cleanup - ([42f93be](https://github.com/abougouffa/minemacs/commit/42f93beec2569558907d324b8a3ca54e8d272799)) - [@abougouffa](https://github.com/abougouffa)
+- **(gc)** experimenting with `gc-cons-percentage` without `gcmh` - ([676a3b0](https://github.com/abougouffa/minemacs/commit/676a3b000fabf6af7fdb4c605ed6ec788a52683c)) - [@abougouffa](https://github.com/abougouffa)
+- **(llm)** minor refactoring - ([dc4372f](https://github.com/abougouffa/minemacs/commit/dc4372f969e3d078e8dce47c7f48b27e4a047ac5)) - [@abougouffa](https://github.com/abougouffa)
+- **(octave)** use `octave-maybe-mode` for `.m` - ([c03e197](https://github.com/abougouffa/minemacs/commit/c03e1978be79dc662c296b4713db6a973750664b)) - [@abougouffa](https://github.com/abougouffa)
+- **(org)** minor cleanup - ([3ddb276](https://github.com/abougouffa/minemacs/commit/3ddb2761d259ec6aa09a7bbbba2397e83e3a8f8d)) - [@abougouffa](https://github.com/abougouffa)
+- **(org-agenda)** stick to the defaults for some options - ([11f3045](https://github.com/abougouffa/minemacs/commit/11f30450973c69fc05d878a834afe731be5e2269)) - [@abougouffa](https://github.com/abougouffa)
+- **(verb)** add keybindings - ([f3d782f](https://github.com/abougouffa/minemacs/commit/f3d782f846ac3646bca242fd0694ac57b79ccddb)) - [@abougouffa](https://github.com/abougouffa)
+- more lazy and deferred stuff - ([0c363e0](https://github.com/abougouffa/minemacs/commit/0c363e0a96844563e5173811affe00636d273a15)) - [@abougouffa](https://github.com/abougouffa)
+- use `project-prompter` when relevant - ([4ab109a](https://github.com/abougouffa/minemacs/commit/4ab109a376cf084ff2ea45c61101e35cb732131b)) - [@abougouffa](https://github.com/abougouffa)
+- bump packages versions - ([d42ce53](https://github.com/abougouffa/minemacs/commit/d42ce53d85eba203fe5c66948afb89ce96596274)) - [@abougouffa](https://github.com/abougouffa)
+
+- - -
+
+## [v6.6.0](https://github.com/abougouffa/minemacs/compare/178a7403c9ef1c50e3c99e41662136b799c6138d..v6.6.0) - 2024-05-23
+#### Bug Fixes
+- **(keybindings)** bind `auto-insert` to the insert menu - ([178a740](https://github.com/abougouffa/minemacs/commit/178a7403c9ef1c50e3c99e41662136b799c6138d)) - [@abougouffa](https://github.com/abougouffa)
+#### Features
+- **(debug)** add support for `objdump-disassemble` - ([9887a12](https://github.com/abougouffa/minemacs/commit/9887a1213f106b5c78507a431c2a4a046827a23f)) - [@abougouffa](https://github.com/abougouffa)
+- remove `me-binary` module and the `objdump` stuff - ([e3766b0](https://github.com/abougouffa/minemacs/commit/e3766b002da70bd87b488e88fee6f24d5080875a)) - [@abougouffa](https://github.com/abougouffa)
+#### Tweaks
+- **(spdx)** add some insert keybindings - ([91e9ad2](https://github.com/abougouffa/minemacs/commit/91e9ad2960b3e2fd196f271fa38c26df67404697)) - [@abougouffa](https://github.com/abougouffa)
+
+- - -
+
+## [v6.5.0](https://github.com/abougouffa/minemacs/compare/2e3f35b4faab281ba2dc2a17c359774f64aa7f3a..v6.5.0) - 2024-05-23
+#### Features
+- **(core-ui)** make `spacious-padding` obsolete - ([078f79d](https://github.com/abougouffa/minemacs/commit/078f79d2c3672f95bd51fa35d2d543ce549b620f)) - [@abougouffa](https://github.com/abougouffa)
+- **(gtd)** initial support for `org-gtd` - ([9ce4266](https://github.com/abougouffa/minemacs/commit/9ce4266a51416644e40bcc73d3593e214dc89c3c)) - [@abougouffa](https://github.com/abougouffa)
+- **(gtd)** empty module for Getting Things Done workflow - ([5f4ea3f](https://github.com/abougouffa/minemacs/commit/5f4ea3fd7fd558461bc4f40e83762112b7583da0)) - [@abougouffa](https://github.com/abougouffa)
+- **(prog)** add support for `add-node-modules-path` - ([d5f490e](https://github.com/abougouffa/minemacs/commit/d5f490e362359ef75b48ae96c7bfbbf4bb560a59)) - [@abougouffa](https://github.com/abougouffa)
+- **(tools)** replace unused `ack` with `rg` - ([d0f9d63](https://github.com/abougouffa/minemacs/commit/d0f9d638298ee63720e1555fb98abd53a3f0aa23)) - [@abougouffa](https://github.com/abougouffa)
+#### Nitpicks, changes with no side effect
+- **(use-package)** remove unnecessary `t` argument from `:demand` - ([1e91729](https://github.com/abougouffa/minemacs/commit/1e91729144b1d331ef5f35c84edb7a1ea0df7a23)) - [@abougouffa](https://github.com/abougouffa)
+- add options file for `ctags` (to be used later) - ([5f8ef60](https://github.com/abougouffa/minemacs/commit/5f8ef60ea020e45c258ddd09fc8ac22f963315e6)) - [@abougouffa](https://github.com/abougouffa)
+#### Refactoring
+- **(core)** minor edit - ([e5de394](https://github.com/abougouffa/minemacs/commit/e5de3945aae6e18b90254b76c4cb6fac252c2bf7)) - [@abougouffa](https://github.com/abougouffa)
+#### Revert
+- **(parinfer-rust)** remove temporary hack after being fixed upstream - ([8eda977](https://github.com/abougouffa/minemacs/commit/8eda977209fa6674e3ff72f716706bf7d2d11de8)) - [@abougouffa](https://github.com/abougouffa)
+#### Tweaks
+- **(c-mode)** use K&R style by default - ([d09be4b](https://github.com/abougouffa/minemacs/commit/d09be4b23a41d8f3ad2188cdf953d857863c0b3f)) - [@abougouffa](https://github.com/abougouffa)
+- **(core)** more ignored environment variables - ([21e13c8](https://github.com/abougouffa/minemacs/commit/21e13c803fc43bfdc0fe210d45d9d73080cf65ec)) - [@abougouffa](https://github.com/abougouffa)
+- **(crm)** indicate in the prompt about `completing-read-multiple` - ([02cd1a0](https://github.com/abougouffa/minemacs/commit/02cd1a070e42cef7c494d7c6175cff7f6559ed02)) - [@abougouffa](https://github.com/abougouffa)
+- **(eglot)** take `vhdl-ts-mode` and `verilog-ts-mode` into account - ([2e3f35b](https://github.com/abougouffa/minemacs/commit/2e3f35b4faab281ba2dc2a17c359774f64aa7f3a)) - [@abougouffa](https://github.com/abougouffa)
+- **(minibuffer)** don't move cursor to the prompt region - ([786a089](https://github.com/abougouffa/minemacs/commit/786a0897396338a3b0d46b1ab65cdfbfdb31a599)) - [@abougouffa](https://github.com/abougouffa)
+- **(org-modern)** stick to the defaults for lists and stars - ([adc38d8](https://github.com/abougouffa/minemacs/commit/adc38d8e0fb0a7c888dd14ee0cc9a86e2e7dfa93)) - [@abougouffa](https://github.com/abougouffa)
+- **(parinfer-rust)** hook only to the base mode `lisp-data-mode` - ([ac06034](https://github.com/abougouffa/minemacs/commit/ac0603461ecf51994cc9ee12e3fdb9248d35318d)) - [@abougouffa](https://github.com/abougouffa)
+- **(use-package)** set `use-package` options after tweaking its settings - ([9cf959c](https://github.com/abougouffa/minemacs/commit/9cf959cbed343cdfaf067e07c1db689522e0d2f4)) - [@abougouffa](https://github.com/abougouffa)
+- **(wgrep)** move from `me-completion` to `me-editor` - ([212c7a8](https://github.com/abougouffa/minemacs/commit/212c7a8ef5780deb30484a53d96c47a674e33671)) - [@abougouffa](https://github.com/abougouffa)
+- bump packages versions - ([ce049d5](https://github.com/abougouffa/minemacs/commit/ce049d52b047e397d23839e1f1d1d7cb38c1dec9)) - [@abougouffa](https://github.com/abougouffa)
+- enable `compilation-shell-minor-mode` in terminals - ([fb0e773](https://github.com/abougouffa/minemacs/commit/fb0e773f857f214ae461e189dcce5b1e731c00bc)) - [@abougouffa](https://github.com/abougouffa)
+
+- - -
+
+## [v6.4.1](https://github.com/abougouffa/minemacs/compare/e09a2c2276f6a7901c4ea6ed882d801f81a500f8..v6.4.1) - 2024-05-22
+#### Bug Fixes
+- **(flymake-guile)** use a mirror on GitHub (Framagit issues) - ([9a3786a](https://github.com/abougouffa/minemacs/commit/9a3786a2bc6fa53f17343f78f4cf48897b9aa76f)) - [@abougouffa](https://github.com/abougouffa)
+#### Features
+- **(core-ui)** enable the lightweight `light-dashboard` - ([f368331](https://github.com/abougouffa/minemacs/commit/f3683310a4dd2867870af658661b6a76cc182e24)) - [@abougouffa](https://github.com/abougouffa)
+- **(editor)** add support for `spdx` - ([46e78aa](https://github.com/abougouffa/minemacs/commit/46e78aac6bcad718c9d6c998b9397c8a71acffd4)) - [@abougouffa](https://github.com/abougouffa)
+- **(email)** add initial support for `mu4e-crypto` - ([82a0716](https://github.com/abougouffa/minemacs/commit/82a0716740aeb901865b19dce4eb1771281c5f5e)) - [@abougouffa](https://github.com/abougouffa)
+#### Refactoring
+- **(core)** minor edits - ([d4349f2](https://github.com/abougouffa/minemacs/commit/d4349f291bce5604f0af719a720d6c70c634425a)) - [@abougouffa](https://github.com/abougouffa)
+#### Tweaks
+- **(core)** add an option to disable proxies via environment variable - ([e09a2c2](https://github.com/abougouffa/minemacs/commit/e09a2c2276f6a7901c4ea6ed882d801f81a500f8)) - [@abougouffa](https://github.com/abougouffa)
+- **(emacs-lisp)** move Elisp customization to a separate package - ([958462a](https://github.com/abougouffa/minemacs/commit/958462a9380dcefeb2aa4d753a5d11451408c34a)) - [@abougouffa](https://github.com/abougouffa)
+- **(verb)** use the default keybinding - ([9c47e37](https://github.com/abougouffa/minemacs/commit/9c47e37154c67b56e1b3b75f62db85024484ba09)) - [@abougouffa](https://github.com/abougouffa)
+
+- - -
+
+## [v6.4.0](https://github.com/abougouffa/minemacs/compare/60d176a92768fceeda7a2f456830d63abaa75a09..v6.4.0) - 2024-05-21
+#### Bug Fixes
+- `defalias` (hence, `defun`) isn't guaranteed to return the name - ([5d7231b](https://github.com/abougouffa/minemacs/commit/5d7231bb8a75516cdd958029554a1deff42cae31)) - [@abougouffa](https://github.com/abougouffa)
+#### Documentation
+- update the list of modules - ([5b06b53](https://github.com/abougouffa/minemacs/commit/5b06b53573c50a9c00e04933a444ce5aa7e13c98)) - [@abougouffa](https://github.com/abougouffa)
+#### Features
+- **(bootstrap)** add support for `satch` and `once` - ([d23861e](https://github.com/abougouffa/minemacs/commit/d23861eda559ad254e0bdf21eb48df0a15a8f632)) - [@abougouffa](https://github.com/abougouffa)
+- **(eglot)** restore the `+eglot-help-at-point` command - ([ba2e628](https://github.com/abougouffa/minemacs/commit/ba2e628b6272fc6256e66dfe9f93a10d999cea87)) - [@abougouffa](https://github.com/abougouffa)
+- **(eglot)** extra performance tweaks via `+eglot-optimization-mode` - ([9ebb7b5](https://github.com/abougouffa/minemacs/commit/9ebb7b5579827f45fc37415ade64f6776c4dade7)) - [@abougouffa](https://github.com/abougouffa)
+- **(project)** add initial support for `find-file-in-project` - ([9a215f3](https://github.com/abougouffa/minemacs/commit/9a215f3c96c1d0eadae31bbcc04b678bbad29d4b)) - [@abougouffa](https://github.com/abougouffa)
+- **(tags)** add initial support for `ggtags - ([f5cbe58](https://github.com/abougouffa/minemacs/commit/f5cbe588935c5fd8b9622116176b9348596e0bf2)) - [@abougouffa](https://github.com/abougouffa)
+#### Tweaks
+- **(consult-notes)** use ripgrep only if available - ([1a3f3c6](https://github.com/abougouffa/minemacs/commit/1a3f3c676f25598462232d34bd1a6cacae15e469)) - [@abougouffa](https://github.com/abougouffa)
+- **(dumb-jump)** prefer `xref` interface over obsolete commands - ([60d176a](https://github.com/abougouffa/minemacs/commit/60d176a92768fceeda7a2f456830d63abaa75a09)) - [@abougouffa](https://github.com/abougouffa)
+- **(edebug)** decouple from `elisp-mode` and inhibit bindings - ([c7f996f](https://github.com/abougouffa/minemacs/commit/c7f996f3ff525aeb2924282179fd98ef0c17c024)) - [@abougouffa](https://github.com/abougouffa)
+- **(eglot)** better performance by disabling logging to events buffer - ([82cfe06](https://github.com/abougouffa/minemacs/commit/82cfe062e56c9814324acc28ce12c168b64f2bdb)) - [@abougouffa](https://github.com/abougouffa)
+- **(fzf)** make it believe that `projectile` is available to get `fzf-project` - ([78e7d24](https://github.com/abougouffa/minemacs/commit/78e7d242b7984cb3c9b61c5b1575d7e92f3ca295)) - [@abougouffa](https://github.com/abougouffa)
+- **(prog)** move non-LSP source code tagging packages to `me-tags` - ([4bcaef3](https://github.com/abougouffa/minemacs/commit/4bcaef38268c2578ec8b61d245ae17196c6ddbc1)) - [@abougouffa](https://github.com/abougouffa)
+- bump packages versions - ([7887c8c](https://github.com/abougouffa/minemacs/commit/7887c8c5c7fcbde06e799fb8692a1a16a90e224b)) - [@abougouffa](https://github.com/abougouffa)
+
+- - -
+
+## [v6.3.0](https://github.com/abougouffa/minemacs/compare/440936fd8f30a299007bdbe3b7bfb0e1259da40d..v6.3.0) - 2024-05-21
+#### Bug Fixes
+- **(core)** use-package `::trigger-commands` implementation - ([95de9a5](https://github.com/abougouffa/minemacs/commit/95de9a5d272c4aa73d9b039132b7057a364c6f5b)) - [@abougouffa](https://github.com/abougouffa)
+- **(emacs-lisp)** fix the provided feature name - ([fb8eb8f](https://github.com/abougouffa/minemacs/commit/fb8eb8f9e853efe615cc19464e6f9d70ed6e5cbc)) - [@abougouffa](https://github.com/abougouffa)
+- **(mu4e)** use `:autoload` instead of `:functions` in `use-package` - ([72f7ce1](https://github.com/abougouffa/minemacs/commit/72f7ce1bbbd3cad20a7b243b1fd64cc2e1c41b19)) - [@abougouffa](https://github.com/abougouffa)
+- **(parinfer-rust)** disable auto usage of fast strategy on long buffers - ([55432e1](https://github.com/abougouffa/minemacs/commit/55432e1e0ec6d06c0ee3c1ab1d536d21e546c063)) - [@abougouffa](https://github.com/abougouffa)
+- **(pet)** hook `pet-mode` in Python - ([440936f](https://github.com/abougouffa/minemacs/commit/440936fd8f30a299007bdbe3b7bfb0e1259da40d)) - [@abougouffa](https://github.com/abougouffa)
+- **(project)** autoload `project-remember-projects-under` - ([90c0d95](https://github.com/abougouffa/minemacs/commit/90c0d954515d507ab99f5a45b0e735fc63bbbbf6)) - [@abougouffa](https://github.com/abougouffa)
+- **(transient)** auto load some commonly used macros - ([bd6921b](https://github.com/abougouffa/minemacs/commit/bd6921b66791ccd00f520883605b80905249fea0)) - [@abougouffa](https://github.com/abougouffa)
+- **(treesit-auto)** fix grammar recipe for XML - ([95c80b3](https://github.com/abougouffa/minemacs/commit/95c80b3325a21297278490ba1b1979a7ffe6d683)) - [@abougouffa](https://github.com/abougouffa)
+- avoid problems on TTY only Emacs (via Termux) - ([98c4d23](https://github.com/abougouffa/minemacs/commit/98c4d23b798ce635455095f6d5f7e16cbb973cd6)) - [@abougouffa](https://github.com/abougouffa)
+- better implementation of the first file hooks - ([5c606a0](https://github.com/abougouffa/minemacs/commit/5c606a06f5cc25860983c9c794edaed7dd786cdf)) - [@abougouffa](https://github.com/abougouffa)
+#### Documentation
+- **(documentation)** regenerate the documentation - ([3a54d3e](https://github.com/abougouffa/minemacs/commit/3a54d3e4fb5106dfe1470955f132c3578c7ac876)) - [@abougouffa](https://github.com/abougouffa)
+- **(documentation)** don't add the banner to the documentation - ([f65d6bd](https://github.com/abougouffa/minemacs/commit/f65d6bd233e915cad9718828e84f34045f5e6534)) - [@abougouffa](https://github.com/abougouffa)
+- **(documentation)** regenerate the documentation - ([4b9d610](https://github.com/abougouffa/minemacs/commit/4b9d610b740d6b5cbe61fe821c24fc3276a3f539)) - [@abougouffa](https://github.com/abougouffa)
+- **(documentation)** regenerate documentation - ([258ca84](https://github.com/abougouffa/minemacs/commit/258ca849fd505d151451ca86972ee5f2b79aad16)) - [@abougouffa](https://github.com/abougouffa)
+- add a comment for some TODOs - ([9e239c6](https://github.com/abougouffa/minemacs/commit/9e239c68fd09e4994311e239b7cbb7b5ae827327)) - [@abougouffa](https://github.com/abougouffa)
+- better comments - ([1e5ceb7](https://github.com/abougouffa/minemacs/commit/1e5ceb7662229a936b5029f99490b98695061944)) - [@abougouffa](https://github.com/abougouffa)
+- simpler banner in `init.el` - ([b97b2f8](https://github.com/abougouffa/minemacs/commit/b97b2f8c43857752016b8e14c939731b667bb104)) - [@abougouffa](https://github.com/abougouffa)
+#### Features
+- **(checkers)** make `flymake-quickdef` and it dependents obsoletes - ([522a351](https://github.com/abougouffa/minemacs/commit/522a351d4b10df6a11604da612fc56b343ccb274)) - [@abougouffa](https://github.com/abougouffa)
+- **(core)** add `+advice-once!` - ([63ba2a5](https://github.com/abougouffa/minemacs/commit/63ba2a5c342e23f097ef3d2756e68ee7651e94c6)) - [@abougouffa](https://github.com/abougouffa)
+- **(debug)** add support for `beardbolt` - ([7b025e4](https://github.com/abougouffa/minemacs/commit/7b025e46960deaf5e71979e5cc5174f3b4e2bac3)) - [@abougouffa](https://github.com/abougouffa)
+- **(debug)** add support for `rmsbolt` - ([276dd20](https://github.com/abougouffa/minemacs/commit/276dd20cadda265f5cc9776ab1bd93f57ca9e18c)) - [@abougouffa](https://github.com/abougouffa)
+- **(dired)** add `+dired-here` - ([d91071d](https://github.com/abougouffa/minemacs/commit/d91071d0fee8fc2b17c43a8346877937a2299b3d)) - [@abougouffa](https://github.com/abougouffa)
+- **(editor)** add support for `zones` - ([caed009](https://github.com/abougouffa/minemacs/commit/caed009efc26e13b8adba27bbf9d76141e56181d)) - [@abougouffa](https://github.com/abougouffa)
+- **(embedded)** add support for `vhdl-ts-mode` - ([35eb8e3](https://github.com/abougouffa/minemacs/commit/35eb8e313bf78409a7bdf09c795f06a69fb075c9)) - [@abougouffa](https://github.com/abougouffa)
+- **(embedded)** add support for `verilog-ts-mode` - ([af14fd0](https://github.com/abougouffa/minemacs/commit/af14fd0b16be50236cf6273dd665d44baca3506f)) - [@abougouffa](https://github.com/abougouffa)
+- **(files)** add my fork of `neotree` which supports `nerd-icons` - ([43445d8](https://github.com/abougouffa/minemacs/commit/43445d8060f5c05474d00669def633060d9de5a2)) - [@abougouffa](https://github.com/abougouffa)
+- **(flymake-collection)** add several backends - ([5471c98](https://github.com/abougouffa/minemacs/commit/5471c9849b518245d1615a900e13db6624bafcff)) - [@abougouffa](https://github.com/abougouffa)
+- **(math)** add initial Matlab integration - ([8e02bce](https://github.com/abougouffa/minemacs/commit/8e02bcec6a01aa8d648c2bc3c53705378efa507f)) - [@abougouffa](https://github.com/abougouffa)
+- **(prog)** add support for `zig-mode` - ([b4c9f59](https://github.com/abougouffa/minemacs/commit/b4c9f599fee96ed2104a86ad80044d61dabaef28)) - [@abougouffa](https://github.com/abougouffa)
+- **(prog)** add support for `llvm-ts-mode` - ([805251c](https://github.com/abougouffa/minemacs/commit/805251c57caa8cebb93d3d1611f5a0ea8aaec966)) - [@abougouffa](https://github.com/abougouffa)
+- **(project)** add support for `projection-dape` - ([b6140c3](https://github.com/abougouffa/minemacs/commit/b6140c3f2601752b2a378f3efe83175dbadef912)) - [@abougouffa](https://github.com/abougouffa)
+- **(reformatter)** initial support for `reformatter` - ([8767b78](https://github.com/abougouffa/minemacs/commit/8767b78a32f98731916385b338e4e709a1b148b0)) - [@abougouffa](https://github.com/abougouffa)
+- **(treesit-auto)** add grammar for Zig - ([31e62f2](https://github.com/abougouffa/minemacs/commit/31e62f274c558536eed7be3d195936ed7d945c9c)) - [@abougouffa](https://github.com/abougouffa)
+- **(treesit-auto)** add a grammar for LLVM - ([07c5b50](https://github.com/abougouffa/minemacs/commit/07c5b50f45d0d9e6ad6fe07facc1cab656276e9c)) - [@abougouffa](https://github.com/abougouffa)
+- **(ui)** add support for `lacarte` - ([b044298](https://github.com/abougouffa/minemacs/commit/b04429809a46de1f0a4df083674ecb3a45a40e32)) - [@abougouffa](https://github.com/abougouffa)
+- **(use-package)** add `:trigger-commands` option - ([9e72e96](https://github.com/abougouffa/minemacs/commit/9e72e96ace8c62a988e976ccdf9d3a6e2ff67669)) - [@abougouffa](https://github.com/abougouffa)
+#### Nitpicks, changes with no side effect
+- provide feature in `me-gdb` - ([7e85327](https://github.com/abougouffa/minemacs/commit/7e85327da2d1d64d413df9cdeddcf2a3442da606)) - [@abougouffa](https://github.com/abougouffa)
+- minor edit - ([8494462](https://github.com/abougouffa/minemacs/commit/8494462526f1f0bdf4b448e96c2257babafc806a)) - [@abougouffa](https://github.com/abougouffa)
+#### Refactoring
+- **(consult-eglot)** rewrite a condition - ([8502500](https://github.com/abougouffa/minemacs/commit/85025004f1965ee1b0c62dd6a0553b94eb56d6d3)) - [@abougouffa](https://github.com/abougouffa)
+- **(core)** remove unnecessary condition - ([9fc1774](https://github.com/abougouffa/minemacs/commit/9fc177431325a644a28956c9b0323c4918202dc9)) - [@abougouffa](https://github.com/abougouffa)
+- **(treesit-auto)** better way of adding extra grammar recipes - ([ce0d766](https://github.com/abougouffa/minemacs/commit/ce0d7664d29913679385972188f272de5c7b45b4)) - [@abougouffa](https://github.com/abougouffa)
+- move less used stuff from `me-lib` to `me-lib-extra` - ([2dc8d06](https://github.com/abougouffa/minemacs/commit/2dc8d069c4b0565f39fa0d2beade25d27c04b5b0)) - [@abougouffa](https://github.com/abougouffa)
+- make some unused macros obsolete - ([4b12fba](https://github.com/abougouffa/minemacs/commit/4b12fbab1e385e8f1b5c08bc745452c8ca214eb7)) - [@abougouffa](https://github.com/abougouffa)
+- rearrange customization groups - ([728d965](https://github.com/abougouffa/minemacs/commit/728d96573c77a0215e06fefbd1b589a8969c7d98)) - [@abougouffa](https://github.com/abougouffa)
+#### Revert
+- **(dired)** don't reinvent the wheel (`dired-jump`) - ([1ab230d](https://github.com/abougouffa/minemacs/commit/1ab230d3ade57564c66feecf1cc30b519bc59b7f)) - [@abougouffa](https://github.com/abougouffa)
+#### Tweaks
+- **(battery)** defer displaying battery status - ([a5b3446](https://github.com/abougouffa/minemacs/commit/a5b3446a6b0cd29c1f832c74892e8aefd2bf14f3)) - [@abougouffa](https://github.com/abougouffa)
+- **(citre)** make additional options custom instead of var - ([02f6694](https://github.com/abougouffa/minemacs/commit/02f6694793ee9a5cef625ee1ef714f27ca7add7e)) - [@abougouffa](https://github.com/abougouffa)
+- **(citre)** remove obsolete variable - ([98538a9](https://github.com/abougouffa/minemacs/commit/98538a9b75950d143428595df2a01a068092b764)) - [@abougouffa](https://github.com/abougouffa)
+- **(code-cells)** prefer `ein` only if not disabled - ([74a9f2d](https://github.com/abougouffa/minemacs/commit/74a9f2d314dc21639e85ca55548e6b466994add6)) - [@abougouffa](https://github.com/abougouffa)
+- **(core)** minor edit - ([335a886](https://github.com/abougouffa/minemacs/commit/335a8862f291e6df8e6962d76856f64e3b44a2d3)) - [@abougouffa](https://github.com/abougouffa)
+- **(core)** better obsolescence message - ([37253c7](https://github.com/abougouffa/minemacs/commit/37253c7a7927de80349f3ef9b2240a619075d396)) - [@abougouffa](https://github.com/abougouffa)
+- **(core-ui)** make `dashboard` obsolete (it slows startup) - ([8b22c5f](https://github.com/abougouffa/minemacs/commit/8b22c5f5cd314abaeb0e0f818a54e1426e31e05f)) - [@abougouffa](https://github.com/abougouffa)
+- **(denote)** defer enabling `denote-rename-buffer-mode` - ([308fe71](https://github.com/abougouffa/minemacs/commit/308fe71e817bb61863d5389a20539083bf642ea0)) - [@abougouffa](https://github.com/abougouffa)
+- **(dired)** better defaults - ([a4ff541](https://github.com/abougouffa/minemacs/commit/a4ff541adf9436ae44f31786d512d862b7d5883b)) - [@abougouffa](https://github.com/abougouffa)
+- **(dired-aux)** ask before creating destination dirs - ([2bf7d2f](https://github.com/abougouffa/minemacs/commit/2bf7d2f53fd70f14ab83865e9486369ad4473d6d)) - [@abougouffa](https://github.com/abougouffa)
+- **(dired-aux)** rename VC files with VC - ([db8a3eb](https://github.com/abougouffa/minemacs/commit/db8a3eb85564140a24363fcbc9a3af050ca77b4f)) - [@abougouffa](https://github.com/abougouffa)
+- **(dired-x)** better defaults - ([cd05541](https://github.com/abougouffa/minemacs/commit/cd05541d7be0dfc524749bf93163087a075d3bd3)) - [@abougouffa](https://github.com/abougouffa)
+- **(flymake-nasm)** don't enable by default - ([6829158](https://github.com/abougouffa/minemacs/commit/6829158edaf5276f2d4af297761d1e3e25933475)) - [@abougouffa](https://github.com/abougouffa)
+- **(helpful)** remap `describe-*` to `helpful-*` equivalents - ([519da81](https://github.com/abougouffa/minemacs/commit/519da81725e95ae38f1781d60b5ce6a7274d6056)) - [@abougouffa](https://github.com/abougouffa)
+- **(keybindings)** minor edits - ([7d62083](https://github.com/abougouffa/minemacs/commit/7d62083ee3cafd91e057eefca15d4e99a316e608)) - [@abougouffa](https://github.com/abougouffa)
+- **(magit-todos)** toggle via `SPC m t` - ([5d4c52f](https://github.com/abougouffa/minemacs/commit/5d4c52f330a3fa7760a0aa11a9b169c8ee03638c)) - [@abougouffa](https://github.com/abougouffa)
+- **(matlab)** enable only when Matlab is installed on the system - ([634f531](https://github.com/abougouffa/minemacs/commit/634f53172d06555032025ae9b128490af2b66f26)) - [@abougouffa](https://github.com/abougouffa)
+- **(natural-langs)** load the `spell-fu` only if `jinx` isn't available - ([3a7edcf](https://github.com/abougouffa/minemacs/commit/3a7edcf64f1cfcb04354d9e9a86678ee156e1b9d)) - [@abougouffa](https://github.com/abougouffa)
+- **(obsolete)** update `yasnippet` / `yasnippet-cape` settings - ([f807b36](https://github.com/abougouffa/minemacs/commit/f807b3680215ff55b26bf5c5bca05c432b2829ca)) - [@abougouffa](https://github.com/abougouffa)
+- **(parinfer-rust)** enable on more Lisp modes - ([2450032](https://github.com/abougouffa/minemacs/commit/2450032e492045adf537457bc44ecf3c940183a1)) - [@abougouffa](https://github.com/abougouffa)
+- **(prog)** make `treesitter-context` obsolete - ([f34ef7e](https://github.com/abougouffa/minemacs/commit/f34ef7ea25e5189cf12736ca60955d87e79d04e9)) - [@abougouffa](https://github.com/abougouffa)
+- **(transient)** don't load immediately - ([b338706](https://github.com/abougouffa/minemacs/commit/b338706ba0228d22e9e583847b6e75010e5e4120)) - [@abougouffa](https://github.com/abougouffa)
+- **(treesit-auto)** minor edit - ([08e6629](https://github.com/abougouffa/minemacs/commit/08e66293806af7c375dc8d0624e2174c628828b8)) - [@abougouffa](https://github.com/abougouffa)
+- **(treesit-auto)** don't add Nix, already added upstream - ([b2f9c1d](https://github.com/abougouffa/minemacs/commit/b2f9c1d04cf380c067de323b26be15429151221a)) - [@abougouffa](https://github.com/abougouffa)
+- **(ui)** make `anzu` obsolete - ([5266669](https://github.com/abougouffa/minemacs/commit/52666692ebf1e970497add5604d24037e9f62ffe)) - [@abougouffa](https://github.com/abougouffa)
+- **(vlf)** use ELPA instead of MELPA for an updated version - ([1b7ac7f](https://github.com/abougouffa/minemacs/commit/1b7ac7f1410646e7cab7e7aeb54265e6dd3d20a1)) - [@abougouffa](https://github.com/abougouffa)
+- **(ztree)** use GNU ELPA mirror - ([e6f071b](https://github.com/abougouffa/minemacs/commit/e6f071b3b53351353ac46184118703cee79ade6d)) - [@abougouffa](https://github.com/abougouffa)
+- faster startup by deferring more stuff - ([34f3323](https://github.com/abougouffa/minemacs/commit/34f3323705dafec6c5de1e59517ab02fc4084825)) - [@abougouffa](https://github.com/abougouffa)
+- bump packages versions - ([4542ecb](https://github.com/abougouffa/minemacs/commit/4542ecb9e89e2b56129fe522d299315768c1ed06)) - [@abougouffa](https://github.com/abougouffa)
+- bump packages versions - ([0a68ed8](https://github.com/abougouffa/minemacs/commit/0a68ed80fc09f4fa4416723607f8b5ffc531ff77)) - [@abougouffa](https://github.com/abougouffa)
+- regenerate loaddefs - ([c8ec252](https://github.com/abougouffa/minemacs/commit/c8ec2526c7025cc481284e9fefc75b77cd896035)) - [@abougouffa](https://github.com/abougouffa)
+- faster loading by deferring some stuff - ([d69d00d](https://github.com/abougouffa/minemacs/commit/d69d00d29c623b2c856534f949c44ce5fe9afff2)) - [@abougouffa](https://github.com/abougouffa)
+- enhance startup time by correctly deferring some packages - ([3fee224](https://github.com/abougouffa/minemacs/commit/3fee2240bb1b97f0595d88877466d959d70d2169)) - [@abougouffa](https://github.com/abougouffa)
+- correctly defer loading some packages + small cleanup - ([dd455b2](https://github.com/abougouffa/minemacs/commit/dd455b24a57dbdb8430d11efcf661e5495347a31)) - [@abougouffa](https://github.com/abougouffa)
+- bump packages versions - ([6fa809e](https://github.com/abougouffa/minemacs/commit/6fa809efea2706bfc00bdbf1f44605c1d4be94dd)) - [@abougouffa](https://github.com/abougouffa)
+
+- - -
+
+## [v6.2.2](https://github.com/abougouffa/minemacs/compare/e03e2d15fa668399d953d26c1c6da767a257cd84..v6.2.2) - 2024-05-16
+#### Documentation
+- **(external-tools)** regenerate - ([5b83f5a](https://github.com/abougouffa/minemacs/commit/5b83f5a5c77b1c765ce6b5b8e1359a6bb190f08a)) - [@abougouffa](https://github.com/abougouffa)
+- **(readme)** update screenshot - ([77a92a5](https://github.com/abougouffa/minemacs/commit/77a92a5da5bf19beca916e3dfa079ccc97702cfd)) - [@abougouffa](https://github.com/abougouffa)
+#### Miscellaneous Chores
+- **(ci)** add more ignores - ([4703c6e](https://github.com/abougouffa/minemacs/commit/4703c6e870a6de99859ab9a38f357eec281c4fe5)) - [@abougouffa](https://github.com/abougouffa)
+#### Refactoring
+- **(multi-vterm)** move display buffer properties to `me-window` - ([596442a](https://github.com/abougouffa/minemacs/commit/596442a89888994d8887588294ab229609881763)) - [@abougouffa](https://github.com/abougouffa)
+#### Tweaks
+- add SQLite to the external tools - ([e03e2d1](https://github.com/abougouffa/minemacs/commit/e03e2d15fa668399d953d26c1c6da767a257cd84)) - [@abougouffa](https://github.com/abougouffa)
+
+- - -
+
+## [v6.2.1](https://github.com/abougouffa/minemacs/compare/a0b672b6d241f21b83cf429e44efc7627d5e25b4..v6.2.1) - 2024-05-16
+#### Bug Fixes
+- don't use `:ensure-system-package` (not available on Emacs 28) - ([a0b672b](https://github.com/abougouffa/minemacs/commit/a0b672b6d241f21b83cf429e44efc7627d5e25b4)) - [@abougouffa](https://github.com/abougouffa)
+
+- - -
+
+## [v6.2.0](https://github.com/abougouffa/minemacs/compare/76cc8b6e611ff3f54f7ecd76e9efe6d4f11406e1..v6.2.0) - 2024-05-16
+#### Bug Fixes
+- **(core)** fix implementation of `+with-proxies` and `+with-no-proxies` - ([2e5d123](https://github.com/abougouffa/minemacs/commit/2e5d1235072d23b0c0b8020d19e550390bee4e53)) - [@abougouffa](https://github.com/abougouffa)
+- use proxies in async update - ([a20a23e](https://github.com/abougouffa/minemacs/commit/a20a23e6900a45d97ac6d32b52150281ef684ff4)) - [@abougouffa](https://github.com/abougouffa)
+#### Documentation
+- **(documentation)** regenerate the documentation - ([76cc8b6](https://github.com/abougouffa/minemacs/commit/76cc8b6e611ff3f54f7ecd76e9efe6d4f11406e1)) - [@abougouffa](https://github.com/abougouffa)
+#### Features
+- **(bootstrap)** add support for system packages dependencies - ([3494b59](https://github.com/abougouffa/minemacs/commit/3494b59bdaeb789f8b06cde35d9a799b75b328e5)) - [@abougouffa](https://github.com/abougouffa)
+- **(tools)** add support for `pet` (Python Executable Tracker) - ([3492b7f](https://github.com/abougouffa/minemacs/commit/3492b7f867129f11fd65f0f3e1b2de857ab926f4)) - [@abougouffa](https://github.com/abougouffa)
+#### Revert
+- **(core)** restore old proxy behavior (issues with deferred stuff) - ([51eaafb](https://github.com/abougouffa/minemacs/commit/51eaafb339e37bb7bc3642617e7a3b15c0975822)) - [@abougouffa](https://github.com/abougouffa)
+#### Tweaks
+- **(core)** revert to using global proxies - ([b288093](https://github.com/abougouffa/minemacs/commit/b288093574cc86b57053b2960162322bb328a320)) - [@abougouffa](https://github.com/abougouffa)
+- **(envrc)** make use of `:ensure-system-package` - ([cbbdc14](https://github.com/abougouffa/minemacs/commit/cbbdc1459d184d03a8f057bdc3e7eabad5a5e080)) - [@abougouffa](https://github.com/abougouffa)
+- **(prog)** obsolete `pyenv` and `pyvenv` (to be replaced with `pet`) - ([650b10c](https://github.com/abougouffa/minemacs/commit/650b10ce59ec7b99506f19699b94d321cc5a7cd8)) - [@abougouffa](https://github.com/abougouffa)
+- bump packages versions - ([47c8810](https://github.com/abougouffa/minemacs/commit/47c881042056bd5553291bd0186587fb29fd0c98)) - [@abougouffa](https://github.com/abougouffa)
+
+- - -
+
+## [v6.1.1](https://github.com/abougouffa/minemacs/compare/ff4405287b9cf77e8a0e89dfbff193224c740e0d..v6.1.1) - 2024-05-15
+#### Tweaks
+- **(natural-langs)** make `go-translate` obsolete - ([4a34b9a](https://github.com/abougouffa/minemacs/commit/4a34b9a644eed05d562af0297fd4c401356ec685)) - [@abougouffa](https://github.com/abougouffa)
+- regenerate loaddefs - ([ff44052](https://github.com/abougouffa/minemacs/commit/ff4405287b9cf77e8a0e89dfbff193224c740e0d)) - [@abougouffa](https://github.com/abougouffa)
+
+- - -
+
+## [v6.1.0](https://github.com/abougouffa/minemacs/compare/87e6c5fb66291b3756791b8ead083c8f5a47165a..v6.1.0) - 2024-05-15
+#### Bug Fixes
+- **(core)** use `+with-proxies` when updating - ([0452e5c](https://github.com/abougouffa/minemacs/commit/0452e5c5284a4e3ac6884c9a48aeed18019ac10b)) - [@abougouffa](https://github.com/abougouffa)
+- **(dashboard)** do Evil stuff after loading Evil - ([b5f55ab](https://github.com/abougouffa/minemacs/commit/b5f55ab0d231c827bee897e2010c6c14ee1b46e1)) - [@abougouffa](https://github.com/abougouffa)
+- apply Evil-specific tweaks only when Evil is loaded - ([96d917d](https://github.com/abougouffa/minemacs/commit/96d917dbe88f36ac535a2816dc67aa5d45c4b0be)) - [@abougouffa](https://github.com/abougouffa)
+#### Features
+- **(core)** better implementation of proxies - ([401c43b](https://github.com/abougouffa/minemacs/commit/401c43bff3b1f7671524bcd6014978d48af4f11e)) - [@abougouffa](https://github.com/abougouffa)
+- **(data)** add `jq-mode` with `yq` integration for YAML - ([f678163](https://github.com/abougouffa/minemacs/commit/f6781634308da44320488070be972844b2552285)) - [@abougouffa](https://github.com/abougouffa)
+- **(tools)** add support for impostman - ([20bf7f2](https://github.com/abougouffa/minemacs/commit/20bf7f28afd16e7f6f30cd545fe86981d22c8a97)) - [@abougouffa](https://github.com/abougouffa)
+- **(tools)** add support for verb.el - ([d990039](https://github.com/abougouffa/minemacs/commit/d9900395ef48f8971ef7aabe8ee6a2ed215d4572)) - [@abougouffa](https://github.com/abougouffa)
+#### Tweaks
+- **(core)** change the proxy handling mechanism (don't enable globally) - ([67bbfde](https://github.com/abougouffa/minemacs/commit/67bbfdee7b05f2653e59a46c21f3e636a88fb15e)) - [@abougouffa](https://github.com/abougouffa)
+- **(core)** regenerate loaddefs - ([87e6c5f](https://github.com/abougouffa/minemacs/commit/87e6c5fb66291b3756791b8ead083c8f5a47165a)) - [@abougouffa](https://github.com/abougouffa)
+- **(tools)** make `osm` obsolete - ([da908cb](https://github.com/abougouffa/minemacs/commit/da908cbaac80116192e01b5ddf5fcca84c9c0897)) - [@abougouffa](https://github.com/abougouffa)
+- bump packages versions - ([1801878](https://github.com/abougouffa/minemacs/commit/180187881047f10b713e5f1c43e52aac9eafb8fd)) - [@abougouffa](https://github.com/abougouffa)
+
+- - -
+
+## [v6.0.7](https://github.com/abougouffa/minemacs/compare/26fae161fd85919ca47f7788e0254e32809f4763..v6.0.7) - 2024-05-11
+#### Bug Fixes
+- bootstrapping error when Emacs lack some builtin features - ([26fae16](https://github.com/abougouffa/minemacs/commit/26fae161fd85919ca47f7788e0254e32809f4763)) - [@abougouffa](https://github.com/abougouffa)
+#### Tweaks
+- bump packages versions - ([1198fcc](https://github.com/abougouffa/minemacs/commit/1198fcc0544efac23c2f368af0a8e9cfdf8e9003)) - [@abougouffa](https://github.com/abougouffa)
+
+- - -
+
+## [v6.0.6](https://github.com/abougouffa/minemacs/compare/633137915c6433062f7eed16e5ae4fce01ff3a3a..v6.0.6) - 2024-05-03
+#### Bug Fixes
+- **(transient)** fix void symbol issue on Emacs 30 - ([624cc7e](https://github.com/abougouffa/minemacs/commit/624cc7eff18080f1799310a1beced28346af84d5)) - [@abougouffa](https://github.com/abougouffa)
+#### Documentation
+- **(documentation)** regenerate the documentation - ([6331379](https://github.com/abougouffa/minemacs/commit/633137915c6433062f7eed16e5ae4fce01ff3a3a)) - [@abougouffa](https://github.com/abougouffa)
+#### Tweaks
+- **(org)** remove unneeded `:after` blocks - ([b540f01](https://github.com/abougouffa/minemacs/commit/b540f01619b24df0107419eb63e2ac7c7cec3d60)) - [@abougouffa](https://github.com/abougouffa)
+- **(straight)** register conditionally disabled packages - ([87e8b1a](https://github.com/abougouffa/minemacs/commit/87e8b1ab6554ff52da884a2b57a12c6905814132)) - [@abougouffa](https://github.com/abougouffa)
+- bump packages versions - ([8a7fb31](https://github.com/abougouffa/minemacs/commit/8a7fb31eb8ac842820e7da8b6775e3b0face0b08)) - [@abougouffa](https://github.com/abougouffa)
+
+- - -
+
+## [v6.0.5](https://github.com/abougouffa/minemacs/compare/b88214b3f1dce738b23bc3c58a3e88584545c209..v6.0.5) - 2024-05-01
+#### Revert
+- **(early-init)** minor simplification (not working on Emacs 28.2) - ([b88214b](https://github.com/abougouffa/minemacs/commit/b88214b3f1dce738b23bc3c58a3e88584545c209)) - [@abougouffa](https://github.com/abougouffa)
+
+- - -
+
+## [v6.0.4](https://github.com/abougouffa/minemacs/compare/99fb7b1814c1edf34979a15e25f690bbe2ad4022..v6.0.4) - 2024-05-01
+#### Documentation
+- **(init)** update documentation - ([9450101](https://github.com/abougouffa/minemacs/commit/945010147866c43d103f6c9ab41f39e6411da04e)) - [@abougouffa](https://github.com/abougouffa)
+#### Refactoring
+- **(early-init)** minor simplification - ([d5e9365](https://github.com/abougouffa/minemacs/commit/d5e9365b5e876e04b91a4fa35a6ce04aac16cf54)) - [@abougouffa](https://github.com/abougouffa)
+#### Tweaks
+- **(early-init)** remove duplicate parameters set in `spacious-padding` - ([99fb7b1](https://github.com/abougouffa/minemacs/commit/99fb7b1814c1edf34979a15e25f690bbe2ad4022)) - [@abougouffa](https://github.com/abougouffa)
+- **(gerrit)** remove `gerrit-section`, uses obsolete functionalities - ([493a74e](https://github.com/abougouffa/minemacs/commit/493a74ed876163521633d6b60aeea718b38eacd0)) - [@abougouffa](https://github.com/abougouffa)
+
+- - -
+
+## [v6.0.3](https://github.com/abougouffa/minemacs/compare/557f0a74610d702962fed376bdc0d05be693650a..v6.0.3) - 2024-04-26
+#### Bug Fixes
+- **(auctex)** revert to the prvious revision (regression on Windows) - ([557f0a7](https://github.com/abougouffa/minemacs/commit/557f0a74610d702962fed376bdc0d05be693650a)) - [@abougouffa](https://github.com/abougouffa)
+#### Tweaks
+- **(auctex)** pin to an older version due to an issue with Windows - ([747f779](https://github.com/abougouffa/minemacs/commit/747f779ee6018bb4af973cf97bb27a45c4a1d162)) - [@abougouffa](https://github.com/abougouffa)
+- bump packages versions - ([d51e6c7](https://github.com/abougouffa/minemacs/commit/d51e6c7d7169dfe8c3b49e9075b1c883cd635a68)) - [@abougouffa](https://github.com/abougouffa)
+
+- - -
+
+## [v6.0.2](https://github.com/abougouffa/minemacs/compare/1fa52656297bb4a3ee185c0dfcb1b47205e83685..v6.0.2) - 2024-04-25
+#### Tweaks
+- **(dirvish)** don't show Git status - ([60c24a1](https://github.com/abougouffa/minemacs/commit/60c24a1b9b2cb0fb1d86b4244d6ae13d04a85323)) - [@abougouffa](https://github.com/abougouffa)
+- **(dirvish)** don't show Git messages - ([1fa5265](https://github.com/abougouffa/minemacs/commit/1fa52656297bb4a3ee185c0dfcb1b47205e83685)) - [@abougouffa](https://github.com/abougouffa)
+- bump packages versions - ([3e182d8](https://github.com/abougouffa/minemacs/commit/3e182d80aefabaceef3782540fbf956d7159ded1)) - [@abougouffa](https://github.com/abougouffa)
+
+- - -
+
+## [v6.0.1](https://github.com/abougouffa/minemacs/compare/eb99c88d5fe072510755be197b9ff412a0c7c6ac..v6.0.1) - 2024-04-22
+#### Documentation
+- **(documentation)** regenerate the documentation - ([eb99c88](https://github.com/abougouffa/minemacs/commit/eb99c88d5fe072510755be197b9ff412a0c7c6ac)) - [@abougouffa](https://github.com/abougouffa)
+#### Tweaks
+- bump packages versions - ([67bade8](https://github.com/abougouffa/minemacs/commit/67bade8584af0b220477405984fbc0e2a3332c53)) - [@abougouffa](https://github.com/abougouffa)
+
+- - -
+
+## [v6.0.0](https://github.com/abougouffa/minemacs/compare/6c80599d2092afd6dd8ac1e8d0c424172b270bd2..v6.0.0) - 2024-04-15
+#### Tweaks
+- **(skel)** update modules list - ([4b9a0c4](https://github.com/abougouffa/minemacs/commit/4b9a0c4068b8646345ab83335b5232db637efe03)) - [@abougouffa](https://github.com/abougouffa)
+- bump `tabspaces` version - ([c43f0e7](https://github.com/abougouffa/minemacs/commit/c43f0e7752c7b60d31a98cca1e6840b0a12b7a8e)) - [@abougouffa](https://github.com/abougouffa)
+- make `lsp` + `dap` obsolete in favor of `eglot` + `dape` - ([6c80599](https://github.com/abougouffa/minemacs/commit/6c80599d2092afd6dd8ac1e8d0c424172b270bd2)) - [@abougouffa](https://github.com/abougouffa)
+
+- - -
+
+## [v5.2.0](https://github.com/abougouffa/minemacs/compare/3b3ac4820f1cae822ecf0926c46cc2f5e46e483c..v5.2.0) - 2024-04-15
+#### Documentation
+- regenerate the documentation - ([ee6866c](https://github.com/abougouffa/minemacs/commit/ee6866c1bb0a43f4507c997f9d39525bfd1632f7)) - [@abougouffa](https://github.com/abougouffa)
+#### Miscellaneous Chores
+- **(ci)** don't run tests on Emacs 28.1 & 29.1 - ([92a2467](https://github.com/abougouffa/minemacs/commit/92a24679e205b4113a0b59a8c7ed588e7f45ba80)) - [@abougouffa](https://github.com/abougouffa)
+- **(makefile)** cleanup extra stuff to avoid problems - ([f08045e](https://github.com/abougouffa/minemacs/commit/f08045e831ec5a6b51d7c1fdbad093bc581f0313)) - [@abougouffa](https://github.com/abougouffa)
+#### Revert
+- **(core)** remove an old fix intended for Emacs 29.1 - ([233b4ed](https://github.com/abougouffa/minemacs/commit/233b4edd5070216d5df52c6be217129721337c1d)) - [@abougouffa](https://github.com/abougouffa)
+#### Tweaks
+- **(biblio)** make `zotxt` obsolete, never really used! - ([cd1ae59](https://github.com/abougouffa/minemacs/commit/cd1ae5961def3070c192b17ddf38cfe0a68677bb)) - [@abougouffa](https://github.com/abougouffa)
+- **(builtin)** minor performance tweaks - ([3b3ac48](https://github.com/abougouffa/minemacs/commit/3b3ac4820f1cae822ecf0926c46cc2f5e46e483c)) - [@abougouffa](https://github.com/abougouffa)
+- **(core)** don't auto cleanup MinEmacs' directory - ([58cbde9](https://github.com/abougouffa/minemacs/commit/58cbde95f58a41ed15ba1ce7dc7b86fb6be9014b)) - [@abougouffa](https://github.com/abougouffa)
+- **(core)** remove unused `+sensitive-data-mode` - ([592b335](https://github.com/abougouffa/minemacs/commit/592b3351226de3026ea361b428d1b663a6f2af43)) - [@abougouffa](https://github.com/abougouffa)
+- **(core)** remove unneeded `+package-download-from-urls` - ([0e0c070](https://github.com/abougouffa/minemacs/commit/0e0c070613d9c2cb3338b47efd43b8f27c395a22)) - [@abougouffa](https://github.com/abougouffa)
+- **(dirvish)** bind `dirvish-side` - ([8891bf3](https://github.com/abougouffa/minemacs/commit/8891bf3609505b0d17f7390a0fadf59293712e0b)) - [@abougouffa](https://github.com/abougouffa)
+- **(emacs-lisp)** make `elisp-demos` obsolete - ([dcd02af](https://github.com/abougouffa/minemacs/commit/dcd02af4095e8e9ebb70e6a3582a671305e29a04)) - [@abougouffa](https://github.com/abougouffa)
+- **(envrc)** prevent an annoying error when `direnv` isn't installed - ([1250c6b](https://github.com/abougouffa/minemacs/commit/1250c6b8906fdcd6036bf249ea8bbf36bc5824cc)) - [@abougouffa](https://github.com/abougouffa)
+- **(files)** make `treemacs` obsolete - ([1b9b00c](https://github.com/abougouffa/minemacs/commit/1b9b00c189ba7375643aac47ce0d08e0654d9d12)) - [@abougouffa](https://github.com/abougouffa)
+- **(files)** remove unused `sr-speedbar` - ([401d4bc](https://github.com/abougouffa/minemacs/commit/401d4bcd653bf04b4658cc4d04bd0b8f59ac9717)) - [@abougouffa](https://github.com/abougouffa)
+- **(org)** add a LaTeX class for MPDI template - ([8dd590d](https://github.com/abougouffa/minemacs/commit/8dd590d72f5b8d3ca4b0ef41bdb59a7c560b596b)) - [@abougouffa](https://github.com/abougouffa)
+- **(tools)** make `nix-update` & `guix` obsolete - ([6401380](https://github.com/abougouffa/minemacs/commit/6401380334f81776382e3b869561f2359f61912b)) - [@abougouffa](https://github.com/abougouffa)
+- **(tools)** make `bitwarden` obsolete - ([9d35669](https://github.com/abougouffa/minemacs/commit/9d35669eaa923f0b3de49c0a90794cc684d81082)) - [@abougouffa](https://github.com/abougouffa)
+- **(vc)** make `code-review` obsolete - ([868e99f](https://github.com/abougouffa/minemacs/commit/868e99fac9b8615b709eb32edc42b7b5ba2a6129)) - [@abougouffa](https://github.com/abougouffa)
+- bump packages versions - ([77e928a](https://github.com/abougouffa/minemacs/commit/77e928aec2e6c3cb6c2ee75b6c9907b11951b4f4)) - [@abougouffa](https://github.com/abougouffa)
+
+- - -
+
+## [v5.1.3](https://github.com/abougouffa/minemacs/compare/bc6b6de407e74932d059b9b0ccf57d487b8f3abf..v5.1.3) - 2024-04-04
+#### Bug Fixes
+- **(protobuf-ts-mode)** use a working repo - ([bc6b6de](https://github.com/abougouffa/minemacs/commit/bc6b6de407e74932d059b9b0ccf57d487b8f3abf)) - [@abougouffa](https://github.com/abougouffa)
+#### Miscellaneous Chores
+- **(ci)** add Emacs 29.3 to the CI matrix - ([3caff17](https://github.com/abougouffa/minemacs/commit/3caff17d9c681a865dc9422b6f82ab53b9d2cf25)) - [@abougouffa](https://github.com/abougouffa)
+#### Refactoring
+- **(vc)** remove unneeded `with-eval-after-load` - ([937d19d](https://github.com/abougouffa/minemacs/commit/937d19d29704d3a68302e2c69439760fbb81115e)) - [@abougouffa](https://github.com/abougouffa)
+#### Tweaks
+- **(selection-highlight)** enable after startup - ([8636072](https://github.com/abougouffa/minemacs/commit/8636072e1238f1bdf18bc22f36f9d638e5d6b03e)) - [@abougouffa](https://github.com/abougouffa)
+- **(treesit-auto)** add ts modes to `auto-mode-alist` - ([d6a0227](https://github.com/abougouffa/minemacs/commit/d6a022738ea76e406e2bc2116d32ae1cd429ebda)) - [@abougouffa](https://github.com/abougouffa)
+- bump packages versions - ([035dbc6](https://github.com/abougouffa/minemacs/commit/035dbc6a2a19376ab9d41b156037f05b8efdb8bf)) - [@abougouffa](https://github.com/abougouffa)
+- bump packages versions - ([34d5edd](https://github.com/abougouffa/minemacs/commit/34d5edd038adf92432088479bc42c46fc8a9df50)) - [@abougouffa](https://github.com/abougouffa)
+
+- - -
+
 ## [v5.1.2](https://github.com/abougouffa/minemacs/compare/v5.1.1..v5.1.2) - 2024-03-13
 #### Bug Fixes
 - **(combobulate)** temporary disable on Windows - ([9068009](https://github.com/abougouffa/minemacs/commit/9068009439e9a8aa81d80829a021a74686950e6e)) - [@abougouffa](https://github.com/abougouffa)

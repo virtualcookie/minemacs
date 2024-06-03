@@ -15,8 +15,16 @@
   :config
   (ssh-deploy-hydra "C-c C-z"))
 
-(use-package ack
-  :straight t)
+(use-package tmux
+  :straight (:host github :repo "abougouffa/tmux.el")
+  :unless os/win)
+
+(use-package rg
+  :straight t
+  :init
+  (+map!
+    "sr" #'rg-dwim
+    "sR" #'rg))
 
 (use-package fzf
   :straight t
@@ -31,15 +39,11 @@
     "szf" #'fzf-find-file
     "szF" #'fzf-find-file-in-dir)
   :config
-  (defun fzf-project (&optional with-preview)
-    "Starts an fzf session at the root of the current project."
-    (interactive "P")
-    (let ((fzf/args (if with-preview (concat fzf/args " " fzf/args-for-preview) fzf/args))
-          (fzf--target-validator (fzf--use-validator (function fzf--validate-filename))))
-      (fzf--start (or (ignore-errors (project-root (project-current))) default-directory) #'fzf--action-find-file)))
+  (defalias 'fzf-project 'fzf-projectile)
 
   ;; fzf.el relays on `projectile-project-root' to guess the project root
   (unless (fboundp 'projectile-project-root)
+    (provide 'projectile) ; provide `projectile' because `fzf-projectile' will try to require it
     (defalias 'projectile-project-root (lambda () (ignore-errors (project-root (project-current)))))))
 
 (use-package tldr
@@ -55,6 +59,7 @@
   :straight t
   :when (and (not os/win) (+emacs-features-p 'modules))
   :hook (minemacs-build-functions . vterm-module-compile)
+  :hook (vterm-mode . compilation-shell-minor-mode)
   :bind (:map vterm-mode-map ("<return>" . vterm-send-return))
   :init
   (+map!
@@ -85,14 +90,6 @@
     "otT" #'multi-vterm
     "ott" #'multi-vterm-dedicated-toggle
     "otp" #'multi-vterm-project)
-  ;; Show at bottom
-  (add-to-list 'display-buffer-alist
-               `("\\*vterminal - .*\\*" ;; multi-vterm-project / dedicated
-                 (display-buffer-reuse-window display-buffer-in-direction)
-                 (direction . bottom)
-                 (dedicated . t)
-                 (reusable-frames . visible)
-                 (window-height . 0.3)))
   :custom
   (multi-vterm-dedicated-window-height-percent 30)
   :config
@@ -100,7 +97,7 @@
   ;; `multi-vterm' don't get the working directory right, lets fix it!
   (advice-add
    'multi-vterm-dedicated-open :after
-   (defun +multi-vterm--remote-change-working-directory:after-a (&rest _)
+   (satch-defun +multi-vterm--remote-change-working-directory:after-a (&rest _)
      (if-let ((dir (file-remote-p default-directory 'localname)))
          (vterm-send-string (format "cd %S\n" dir)))))
   (+nvmap!
@@ -154,21 +151,6 @@
   (logview-views-file (concat minemacs-local-dir "logview-views.el"))
   (logview-cache-filename (concat minemacs-cache-dir "logview-cache.el")))
 
-(use-package bitwarden
-  :straight (:host github :repo "seanfarley/emacs-bitwarden")
-  :when (executable-find "bw")
-  :custom
-  (bitwarden-automatic-unlock
-   (lambda ()
-     (require 'auth-source)
-     (if-let* ((matches (auth-source-search :host "bitwarden.com" :max 1))
-               (entry (nth 0 matches))
-               (email (plist-get entry :user))
-               (pass (plist-get entry :secret)))
-         (progn (setq bitwarden-user email)
-                (if (functionp pass) (funcall pass) pass))
-       ""))))
-
 (use-package with-editor
   :straight t
   :hook ((shell-mode eshell-mode term-exec vterm-mode) . +with-editor-export-all)
@@ -202,27 +184,79 @@
     (when-let ((server (assoc 'nix-mode eglot-server-programs)))
       (setcar server '(nix-mode nix-ts-mode)))))
 
-(use-package nix-update
-  :straight t)
-
 (use-package envrc
   :straight t
   :hook (minemacs-first-file . envrc-global-mode)
-  :unless os/win
+  :when (and (not os/win) (executable-find "direnv"))
   :custom
   (envrc-debug minemacs-debug-p)
   :config
   ;; Ensure loading envrc for babel source blocks
   (advice-add #'org-babel-execute-src-block :around #'envrc-propagate-environment))
 
-(use-package guix
+(use-package pet
   :straight t
-  :when (executable-find "guix")
+  :when (and (or (executable-find "dasel") (executable-find "yq"))
+             (or (+emacs-features-p 'sqlite3) (executable-find "sqlite3")))
   :init
-  (+map! "og" #'guix))
+  (add-hook (if (< emacs-major-version 29) 'python-mode-hook 'python-base-mode-hook) #'pet-mode))
 
-(use-package osm
+(use-package verb
+  :straight t
+  :config
+  (define-key org-mode-map (kbd "C-c C-r") verb-command-map)
+  (+map-local! :keymaps 'verb-mode-map
+    "r"     '(nil :wk "verb")
+    "r RET" #'verb-send-request-on-point-no-window
+    "rs"    #'verb-send-request-on-point-other-window
+    "rr"    #'verb-send-request-on-point-other-window-stay
+    "rf"    #'verb-send-request-on-point
+    "re"    #'verb-export-request-on-point
+    "rv"    #'verb-set-var
+    "rx"    #'verb-show-vars))
+
+(use-package restclient
+  :straight (:host github :repo "abougouffa/restclient.el")
+  :hook (restclient-mode . display-line-numbers-mode)
+  :mode ("\\.http\\'" . restclient-mode)
+  :config
+  (+map-local! :keymaps 'restclient-mode-map
+    "r"     '(nil :wk "restclinet")
+    "r RET" #'restclient-http-send-current-suppress-response-buffer
+    "rs"    #'restclient-http-send-current
+    "rr"    #'restclient-http-send-current-stay-in-window
+    "rf"    #'restclient-http-send-current-raw
+    "re"    #'restclient-copy-curl-command)
+
+  (+setq-hook! restclient-mode
+    imenu-generic-expression '((nil "^[A-Z]+\s+.+" 0)))
+
+  ;; From Doom Emacs (in case `gnutls-verify-error' policy is set to something)
+  (advice-add
+   #'restclient-http-do :around
+   (satch-defun +restclient--permit-self-signed-ssl:around-a (orig-fn &rest args)
+     "Forces underlying SSL verification to prompt for self-signed or invalid
+certs, rather than reject them silently."
+     (require 'gnutls)
+     (let (gnutls-verify-error) (apply orig-fn args)))))
+
+(use-package restclient-jq
+  :straight (:host github :repo "abougouffa/restclient.el"))
+
+(use-package restclient-test
   :straight t)
+
+(use-package ob-restclient
+  :straight t
+  :after org
+  :init
+  (org-babel-do-load-languages 'org-babel-load-languages '((restclient . t))))
+
+(use-package impostman
+  :straight t)
+
+(use-package hurl-mode
+  :straight (:host github :repo "JasZhe/hurl-mode"))
 
 
 (provide 'me-tools)

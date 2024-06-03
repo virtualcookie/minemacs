@@ -24,7 +24,7 @@
 
 (use-package org-roam-protocol
   :after org-roam
-  :demand t
+  :demand
   :custom
   (org-roam-protocol-store-links t)
   ;; Add this as bookmarklet in your browser
@@ -37,7 +37,7 @@
   ;; Save a local snapshot of the captured web page using "single-file-cli"
   (advice-add
    'org-roam-protocol-open-ref :after
-   (defun +org-roam-protocol--single-file-snapshot:after-a (info)
+   (satch-defun +org-roam-protocol--single-file-snapshot:after-a (info)
      (+single-file
       (plist-get info :ref)
       (+file-name-incremental
@@ -70,7 +70,7 @@
 (use-package citar-org-roam
   :straight t
   :after citar org-roam
-  :demand t
+  :demand
   :commands +org-roam-node-from-cite
   :config
   ;; Modified form: jethrokuan.github.io/org-roam-guide/

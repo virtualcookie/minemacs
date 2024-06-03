@@ -18,6 +18,7 @@
 
 (defcustom minemacs-modules
   '(
+    ;; me-ai
     ;; me-biblio
     ;; me-binary
     ;; me-calendar
@@ -38,11 +39,11 @@
     ;; me-fun
     me-latex
     ;; me-lifestyle
-    ;; me-lsp
     ;; me-math
     ;; me-media
     ;; me-modeling
     me-multi-cursors
+    ;; me-nano
     me-natural-langs
     me-notes
     me-org
@@ -51,6 +52,8 @@
     ;; me-robot
     ;; me-rss
     ;; me-scheme
+    ;; me-services
+    ;; me-tags
     me-tools
     me-tty
     me-ui

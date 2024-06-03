@@ -10,9 +10,8 @@
 
 (use-package dirvish
   :straight t
-  :demand minemacs-started-with-extra-args-p
   :custom
-  (dirvish-attributes '(subtree-state nerd-icons file-size vc-state git-msg))
+  (dirvish-attributes '(subtree-state nerd-icons file-size))
   (dirvish-cache-dir (+directory-ensure minemacs-cache-dir "dirvish/"))
   (dirvish-mode-line-format '(:left (sort file-time symlink) :right (omit yank index)))
   (dirvish-side-width 30)
@@ -22,10 +21,12 @@
   :init
   (+map!
     ;; Open
-    "o-" '(dirvish :wk "Dirvish")
-    "oq" '(dirvish-quick-access :wk "Dirvish quick access")
+    "o-" #'dirvish
+    "oq" #'dirvish-quick-access
     ;; Search
-    "sd" '(dirvish-fd :wk "Dirvish fd"))
+    "sd" #'dirvish-fd)
+  ;; Load immediately if Emacs is launched in an "open with" fashion
+  (when minemacs-started-with-extra-args-p (require 'dirvish))
   :config
   (+nvmap! :keymaps 'dirvish-mode-map
     "q" #'dirvish-quit
@@ -37,29 +38,18 @@
 
   (dirvish-override-dired-mode 1))
 
-(use-package vlf-setup
-  :straight vlf
-  :after minemacs-loaded
-  :demand t)
-
-(use-package treemacs
-  :straight t
-  :init
-  (+map! "op" #'treemacs)
+(use-package neotree
+  :straight (:host github :repo "abougouffa/emacs-neotree" :branch "feat/nerd-icons")
   :custom
-  (treemacs-persist-file (concat minemacs-local-dir "treemacs/persist.el"))
-  (treemacs-last-error-persist-file (concat minemacs-local-dir "treemacs/last-error-persist.el"))
-  (treemacs-width 30)
-  :config
-  ;; Use the same height for the root node (project directory)
-  (set-face-attribute 'treemacs-root-face nil :height 1.0))
+  (neo-theme 'nerd-icons)
+  :init
+  (+map! "op" #'neotree-toggle))
 
-(use-package treemacs-nerd-icons
-  :straight t
-  :after treemacs nerd-icons
-  :demand t
+(use-package vlf-setup
+  :straight (vlf :source gnu-elpa-mirror)
+  :after minemacs-loaded
   :config
-  (treemacs-load-theme "nerd-icons"))
+  (add-to-list 'so-long-mode-preserved-variables 'vlf-mode))
 
 (use-package sudo-edit
   :straight t
@@ -77,21 +67,9 @@
          ("C-c C-x" . dired-rsync-transient)))
 
 (use-package ztree
-  :straight t
+  :straight (:source gnu-elpa-mirror)
   :init
   (+map! "oz" #'ztree-diff))
-
-(defconst +sr-speedbar-path
-  (+package-download-from-urls 'sr-speedbar "https://www.emacswiki.org/emacs/download/sr-speedbar.el"))
-
-(use-package sr-speedbar
-  :load-path +sr-speedbar-path
-  :commands sr-speedbar-toggle sr-speedbar-open
-  :custom
-  (sr-speedbar-right-side nil)
-  (speedbar-use-images nil)
-  :config
-  (+nvmap! :keymaps 'speedbar-mode-map "q" #'sr-speedbar-close))
 
 
 (provide 'me-files)

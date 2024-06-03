@@ -29,7 +29,7 @@
   :config
   (advice-add
    'cfw:render-button :override
-   (defun +cfw:render-button-flat:override-a (title command &optional state)
+   (satch-defun +cfw:render-button-flat:override-a (title command &optional state)
      "Render a flat button with TITLE, COMMAND and STATE."
      (let ((text (concat " " title " "))
            (keymap (make-sparse-keymap)))
@@ -42,17 +42,17 @@
 
 (use-package calfw-ical
   :straight t
-  :demand t
+  :demand
   :after calfw)
 
 (use-package calfw-cal
   :straight t
-  :demand t
+  :demand
   :after calfw)
 
 (use-package calfw-org
   :straight t
-  :demand t
+  :demand
   :after calfw
   :commands +cfw-open-calendar
   :config

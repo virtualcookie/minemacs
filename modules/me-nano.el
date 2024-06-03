@@ -27,7 +27,7 @@
 (use-package nano-modeline
   :straight (:host github :repo "rougier/nano-modeline")
   :after minemacs-loaded
-  :demand t
+  :demand
   :config
   ;; Disable the default mode-line
   (setq-default mode-line-format nil)
@@ -39,7 +39,7 @@
 
 (use-package nano-vertico
   :straight (:host github :repo "rougier/nano-vertico")
-  :hook (minemacs-after-startup . nano-vertico-mode))
+  :hook (minemacs-lazy . nano-vertico-mode))
 
 
 (provide 'me-nano)

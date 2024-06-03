@@ -81,6 +81,20 @@
   (+map-local! :keymaps '(c-mode-map c++-mode-map fortran-mode-map)
     "D" #'disaster))
 
+(use-package rmsbolt
+  :straight t
+  :config
+  (+mode-alist-add-ts-modes! rmsbolt-languages))
+
+(use-package beardbolt
+  :straight (:host github :repo "abougouffa/beardbolt" :files ("*.el" "starters"))
+  :hook (beardbolt--asm-mode . flymake-mode-off)
+  :config
+  (+mode-alist-add-ts-modes! beardbolt-languages))
+
+(use-package objdump-disassemble
+  :straight (:host github :repo "abougouffa/objdump-disassemble"))
+
 
 (provide 'me-debug)
 

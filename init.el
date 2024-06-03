@@ -4,26 +4,19 @@
 
 ;; Author: Abdelhak Bougouffa (rot13 "nobhtbhssn@srqbencebwrpg.bet")
 
+;;     __  __ _         ______
+;;    |  \/  (_)       |  ____|
+;;    | \  / |_ _ __   | |__   _ __ ___   __ _  ___ ___
+;;    | |\/| | | '_ \  |  __| | '_ ` _ \ / _` |/ __/ __|
+;;    | |  | | | | | | | |____| | | | | | (_| | (__\__ \
+;;    |_|  |_|_|_| |_| |______|_| |_| |_|\__,_|\___|___/
+;;
+;;  MINIMALIST & LIGHTWEIGHT EMACS CONFIGURATION FRAMEWORK
+;;                           abougouffa.github.io/minemacs
+
 ;;; Commentary:
 
-;;            ..                        ...                                   ..OOOOO.....       .OOOO.     ..
-;;         .OOO.                       OOOOO                                  OOOOOOOOOOOOOOOOOOOOOOOOO     .OOO.
-;;        OOO                          .OOO.                                  .OOOOOO.        ...OOOOO.        OOO
-;;       OO.                                                                   .OOOOO                           .OO
-;;      OO.       OOOOOOOO..OOO    OOOOOOO       .OOOO.OOOOO.                    .OOOO.                          .OO
-;;     .OO        .OOO .OOO OOO.   ...OOOO        OOOOO..OOOO                       .OOO.                         OO.
-;;     OO.        .OO. OOO. OOO       OOO.        OOO.    OOO.               ..........OOOO.                      .OO
-;;     OO.        OOO  OOO  OOO       OOO        .OOO     OOO          ..OOOOOOOOOOOOOOOOOOOO.                    .OO
-;;     OO.       .OOO .OOO .OO.      .OOO        OOOO    .OOO        .OOOOOOOOOO...                               .OO
-;;     OOO       OOO. OOO. OOO       OOO.   ..   OOO.    OOO.        OOOOOOOOO                                    OOO
-;;      OO       OOO  OOO  OOO.      OOOO.OOOO  .OOO    .OOOO         OOOOOOOO                                    OO
-;;      .OO      OO.  OO. .OOOO       .OOOOO.   .OO.    .OOOO          .OOOOOOOO.                                OO.
-;;       OOO                                                              .OOOOOOOO...             O.           OOO
-;;        .OO.                                                               ..OOOOOOOOOOOO.......OOO.        .OO.
-;;          .OO.                                                                   ..OOOOOOOOOOOOOOO.       .OO.
-;;
-;;                                 MINIMALIST & LIGHTWEIGHT EMACS CONFIGURATION FRAMEWORK
-;;                                                          abougouffa.github.io/minemacs
+;; # MinEmacs - a minimalist & lightweight Emacs configuration framework
 
 ;; Load and hooks order:
 ;; - `~/.emacs.d/early-init.el`
@@ -52,9 +45,28 @@
 ;; Special hooks defined with `+make-first-file-hook!'
 ;; - `minemacs-first-file-hook'
 ;; - `minemacs-first-elisp-file-hook'
+;; - `minemacs-first-python-file-hook'
 ;; - `minemacs-first-org-file-hook'
+;; - `minemacs-first-c/c++-file-hook'
 
 ;;; Code:
+
+;; Run a profiling session if `$MINEMACS_PROFILE' is defined.
+(when (getenv "MINEMACS_PROFILE")
+  (let ((dir (concat (file-name-directory load-file-name) "elisp/benchmark-init/")))
+    (if (not (file-exists-p (concat dir "benchmark-init.el")))
+        (error "[MinEmacs:Error] `benchmark-init' is not available, make sure you've run \"git submodule update --init\" inside MinEmacs' directory")
+      (add-to-list 'load-path dir)
+      (require 'benchmark-init)
+      (benchmark-init/activate)
+
+      (defun +benchmark-init--desactivate-and-show-h ()
+        (benchmark-init/deactivate)
+        (require 'benchmark-init-modes)
+        (benchmark-init/show-durations-tree))
+
+      (with-eval-after-load 'me-vars
+        (add-hook 'minemacs-lazy-hook #'+benchmark-init--desactivate-and-show-h 99)))))
 
 ;; Check if Emacs version is supported. You can define the
 ;; `$MINEMACS_IGNORE_VERSION_CHECK` environment variable to ignore this check.
@@ -73,11 +85,9 @@
 (set-default-toplevel-value 'file-name-handler-alist nil)
 ;; After Emacs startup, we restore `file-name-handler-alist' while conserving
 ;; the potential edits made during startup.
-(add-hook
- 'emacs-startup-hook
- (defun +mineamcs--restore-file-name-handler-alist-h ()
-   (setq file-name-handler-alist (delete-dups (append file-name-handler-alist (get 'file-name-handler-alist 'original-value)))))
- 100)
+(defun +mineamcs--restore-file-name-handler-alist-h ()
+  (setq file-name-handler-alist (delete-dups (append file-name-handler-alist (get 'file-name-handler-alist 'original-value)))))
+(add-hook 'emacs-startup-hook '+mineamcs--restore-file-name-handler-alist-h 100)
 
 ;; HACK: At this point, MinEmacs variables defined in `me-vars' should be
 ;; already loaded (in "early-init.el"). However, we double-check here and load
@@ -166,7 +176,7 @@
 
 ;; When `minemacs-proxies' is set in "early-init.el" or in "init-tweaks.el",
 ;; `minemacs-enable-proxy' will set the environment variables accordingly.
-(minemacs-enable-proxy)
+(unless minemacs-no-proxies-p (minemacs-enable-proxy minemacs-proxies))
 
 ;; HACK: Load the environment variables saved from shell using `+env-save' to
 ;; `+env-file'. `+env-save' saves all environment variables except these matched
@@ -190,7 +200,7 @@ The `minemacs-loaded' will require `minemacs-lazy' when Emacs goes idle, this
 provides `minemacs-lazy' so the packages loaded with `:after minemacs-lazy' can
 be loaded then it incrementally run the hooks in `minemacs-lazy-hook' when Emacs
 goes idle."
-  (+info! "Loaded Emacs%s in %s." (if (daemonp) " (in daemon mode)" "") (emacs-init-time))
+  (+info! "Loaded Emacs%s in %s, including %.3fs for %d GCs." (if (daemonp) " (in daemon mode)" "") (emacs-init-time) gc-elapsed gcs-done)
   (unless (featurep 'me-org-export-async-init) (+load-theme))
   (require 'minemacs-loaded))
 
@@ -260,16 +270,6 @@ goes idle."
 
 ;; Load user configuration
 (+load-user-configs 'config 'local/config)
-
-(+lazy!
- (when (featurep 'native-compile)
-   (+info! "Trying to clean outdated native compile cache")
-   ;; Delete outdated natively compiled files when Emacs become idle
-   (+shutup! (native-compile-prune-cache)))
- (+info! "Trying to clean outdated straight build cache")
- (+shutup! (+straight-prune-build-cache))
- (+info! "Trying to clean MinEmacs' root directory")
- (+shutup! (+minemacs-root-dir-cleanup)))
 
 
 (+log! "Loaded init.el")

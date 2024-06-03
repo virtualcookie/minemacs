@@ -8,15 +8,11 @@
 
 ;;; Code:
 
-(defgroup minemacs-completion nil
-  "Completion related stuff."
-  :group 'minemacs)
-
 (use-package cape
   :straight t
-  :after minemacs-loaded
-  :demand t
-  :init
+  :after minemacs-first-file
+  :commands +cape-apply-capf-super +toggle-cape-auto-capf-super
+  :preface
   (defcustom +cape-global-capes '(tempel-complete :completion cape-dict)
     "A list of global capes to be available at all times.
 The key `:completion' is used to specify where completion candidates should be
@@ -32,7 +28,7 @@ placed, otherwise they come first."
 `+cape-global-capes'."
     :group 'minemacs-completion
     :type '(repeat function))
-  :config
+  :init
   ;; Silence the pcomplete capf, no errors or messages! Important for corfu!
   (advice-add 'pcomplete-completions-at-point :around #'cape-wrap-silent)
 
@@ -49,7 +45,7 @@ placed, otherwise they come first."
 
   (+add-hook! (TeX-mode LaTeX-mode)
     (add-hook 'completion-at-point-functions #'cape-tex nil t))
-
+  :config
   ;; Make use of `cape''s super Capf functionality. Adapted from:
   ;; git.sr.ht/~gagbo/doom-config/tree/master/item/modules/completion/corfu/config.el
   (defun +cape-apply-capf-super ()
@@ -61,7 +57,7 @@ placed, otherwise they come first."
        (cl-substitute (apply #'cape-capf-super
                              (cl-substitute (car host)
                                             :completion
-                                            (append (cl-pushnew :completion +cape-global-capes))))
+                                            (cl-pushnew :completion +cape-global-capes)))
                       (car host)
                       completion-at-point-functions))))
 
@@ -76,7 +72,6 @@ This depends on `+cape-hosts' and `+cape-global-capes'."
 
 (use-package corfu
   :straight (:files (:defaults "extensions/*.el"))
-  :hook (minemacs-after-startup . global-corfu-mode)
   :hook (eshell-mode . +corfu-less-intrusive-h)
   :hook (minibuffer-setup . +corfu-enable-in-minibuffer-h)
   :bind (:map corfu-map
@@ -90,6 +85,8 @@ This depends on `+cape-hosts' and `+cape-global-capes'."
   (corfu-cycle t) ; Allows cycling through candidates
   (corfu-min-width 25)
   (corfu-auto-delay 0.2)
+  :init
+  (+hook-once! prog-mode-hook (global-corfu-mode 1))
   :config
   (defun +corfu-enable-in-minibuffer-h ()
     "Enable Corfu in the minibuffer if `completion-at-point' is bound."
@@ -138,8 +135,7 @@ This depends on `+cape-hosts' and `+cape-global-capes'."
 (use-package nerd-icons-corfu
   :straight t
   :after corfu
-  :demand t
-  :config
+  :init
   (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter))
 
 (use-package consult
@@ -246,7 +242,7 @@ This depends on `+cape-hosts' and `+cape-global-capes'."
 
 (use-package marginalia
   :straight t
-  :hook (minemacs-after-startup . marginalia-mode))
+  :hook (minemacs-lazy . marginalia-mode))
 
 (use-package nerd-icons-completion
   :straight t
@@ -254,15 +250,13 @@ This depends on `+cape-hosts' and `+cape-global-capes'."
 
 (use-package orderless
   :straight t
-  :after minemacs-loaded
-  :demand t
   :custom
   (completion-styles '(orderless basic))
   (completion-category-overrides '((file (styles basic partial-completion)))))
 
 (use-package vertico
   :straight (:files (:defaults "extensions/*.el"))
-  :hook (minemacs-after-startup . vertico-mode)
+  :hook (minemacs-lazy . vertico-mode)
   ;; In the minibuffer, "C-k" is be mapped to act like "<up>". However, in
   ;; Emacs, "C-k" have a special meaning of `kill-line'. So lets map "C-S-k"
   ;; to serve the original "C-k".
@@ -278,7 +272,6 @@ This depends on `+cape-hosts' and `+cape-global-capes'."
 
 (use-package vertico-directory
   :after vertico
-  :demand t
   :hook (rfn-eshadow-update-overlay . vertico-directory-tidy)
   :bind (:map vertico-map
          ("RET" . vertico-directory-enter)
@@ -292,12 +285,6 @@ This depends on `+cape-hosts' and `+cape-global-capes'."
 
 (use-package vertico-mouse
   :hook (vertico-mode . vertico-mouse-mode))
-
-(use-package wgrep
-  :straight t
-  :commands wgrep-change-to-wgrep-mode
-  :custom
-  (wgrep-auto-save-buffer t))
 
 
 (provide 'me-completion)

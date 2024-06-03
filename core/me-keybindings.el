@@ -10,7 +10,7 @@
 
 (use-package which-key
   :straight t
-  :hook (minemacs-after-startup . which-key-mode)
+  :hook (minemacs-lazy . which-key-mode)
   :custom
   (which-key-idle-delay 1.0)
   (which-key-idle-secondary-delay nil)
@@ -23,17 +23,14 @@
   ;; `which-key-replacement-alist'
   (which-key-allow-multiple-replacements t)
   :config
-  (setq
-   which-key-replacement-alist
-   (append
-    which-key-replacement-alist
+  (cl-callf append which-key-replacement-alist
     (list
      '(("\\`g z" . "\\`evil-\\(?:mc\\|multiedit\\)-\\(.*\\)")    . (nil . "⌶·\\1"))
      '(("\\`g c" . "\\`evilnc-\\(.*\\)")                         . (nil . "#·\\1"))
      '(("\\`g" . "\\`[Ii]nfo[-:]?\\(?:a-\\)?\\(.*\\)")           . (nil . "ɩ·\\1"))
      '(("\\`SPC TAB" . "\\`tabspaces-\\(.*\\)")                  . (nil . "⭾·\\1"))
      '(("\\`SPC p" . "\\`\\+?\\(?:consult-\\)?project-\\(.*\\)") . (nil . "π·\\1"))
-     '(("" . "\\`evil[-:]?\\(?:a-\\)?\\(.*\\)")                  . (nil . "ɛ·\\1")))))
+     '(("" . "\\`evil[-:]?\\(?:a-\\)?\\(.*\\)")                  . (nil . "ɛ·\\1"))))
   ;; Setup `which-key' integration with the minibuffer
   (which-key-setup-minibuffer))
 
@@ -41,7 +38,7 @@
   :straight t
   ;; PERF: Loading `general' early make Emacs very slow on startup.
   :after evil
-  :demand t
+  :demand
   :config
   ;; Advise `define-key' to automatically unbind keys when necessary.
   (general-auto-unbind-keys)
@@ -94,7 +91,6 @@
     "fD"   #'+delete-this-file-and-buffer
     "fF"   #'+sudo-find-file ; will be overriten with `sudo-edit-find-file'
     "fu"   #'+sudo-this-file ; will be overriten with `sudo-edit'
-    "fi"   #'auto-insert
     "fR"   #'+move-this-file
     "ff"   #'find-file
     "fs"   #'save-buffer
@@ -140,9 +136,10 @@
 
     ;; ====== Insert ======
     "i"    '(nil :wk "insert")
-    "iu"   '(insert-char :wk "Unicode char")
+    "ii"   #'auto-insert
+    "iu"   #'insert-char
     "ip"   #'yank-pop ;; Will be overwritten with `consult-yank-pop'
-    "ie"   `(,(when (>= emacs-major-version 29) #'emoji-search) :wk "Emoji")
+    "ie"   (when (>= emacs-major-version 29) #'emoji-search)
 
     ;; ====== Window ======
     "w"    '(nil :wk "window")
@@ -155,7 +152,7 @@
 
     ;; ====== Applications (Open) ======
     "o"    '(nil :wk "open")
-    "o-"   '(dired :wk "Dired") ;; Will be overwritten if dirvish is used
+    "o-"   #'dired-jump ;; Will be overwritten if `dirvish' is used
     "oa"   #'org-agenda
     "oe"   #'eshell
     "o="   #'calc

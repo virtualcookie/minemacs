@@ -6,20 +6,48 @@
 
 ;;; Commentary:
 
-;; Add support for pinning versions of individual packages. See:
-;; github.com/radian-software/straight.el#how-do-i-pin-package-versions-or-use-only-tagged-releases
+;; ## Use-package & straight.el extensions
+
+;; - :pin-ref - allow pinning versions to a specific revision from `use-package'
+;;   using the `:pin-ref' keyword. See:
+;;   github.com/radian-software/straight.el#how-do-i-pin-package-versions-or-use-only-tagged-releases
+;;
+;; - `:trigger-commands' - allow loading a package before executing a specific
+;;   command/function using the `:trigger-commands' keyword
+;;
+;; - Better handling of conditionally enabled packages.
 
 ;;; Code:
+
+(eval-when-compile
+  (require 'straight)
+  (require 'use-package))
 
 (with-eval-after-load 'straight
   ;; Add a profile (and lockfile) for stable package revisions.
   (add-to-list 'straight-profiles '(pinned . "pinned.el"))
   (require 'straight-x))
 
-;; Allow pinning versions from `use-package' using the `:pin-ref' keyword
 (with-eval-after-load 'use-package-core
   (add-to-list 'use-package-keywords :pin-ref)
+  (add-to-list 'use-package-keywords :trigger-commands)
 
+  ;; :trigger-commands
+  (defun use-package-normalize/:trigger-commands (name keyword args)
+    (setq args (use-package-normalize-recursive-symlist name keyword args))
+    (if (consp args) args (list args)))
+
+  (defun use-package-handler/:trigger-commands (name _keyword arg rest state)
+    (use-package-concat
+     (cl-mapcan
+      (lambda (command)
+        (when (symbolp command)
+          (unless (plist-get state :demand)
+            `((+advice-once! ,command :before (require ',name))))))
+      (delete-dups arg))
+     (use-package-process-keywords name rest state)))
+
+  ;; :pin-ref
   (defun use-package-normalize/:pin-ref (_name-symbol keyword args)
     (use-package-only-one (symbol-name keyword) args
       (lambda (_label arg)
@@ -43,14 +71,23 @@
   ;; `straight'.
   (advice-add
    'use-package :around
-   (defun +use-package--check-if-disabled:around-a (origfn package &rest args)
-     (when (and (not (+package-disabled-p package))
-                (or (not (memq :if args))
-                    (and (memq :if args) (eval (+varplist-get args :if t))))
-                (or (not (memq :when args))
-                    (and (memq :when args) (eval (+varplist-get args :when t))))
-                (or (not (memq :unless args))
-                    (and (memq :unless args) (not (eval (+varplist-get args :unless t))))))
+   (satch-defun +use-package--check-if-disabled:around-a (origfn package &rest args)
+     (if (or (+package-disabled-p package)
+             (and (memq :if args)
+                  (not (and (memq :if args) (eval (+varplist-get args :if t)))))
+             (and (memq :when args)
+                  (not (and (memq :when args) (eval (+varplist-get args :when t)))))
+             (and (memq :unless args)
+                  (not (and (memq :unless args) (not (eval (+varplist-get args :unless t)))))))
+         ;; Register the package but don't enable it, useful when creating the lockfile,
+         ;; this is the official straight.el way for conditionally installing packages
+         (when-let* ((recipe (+varplist-get args :straight t)))
+           (let* ((recipe (if (eq recipe t) (list package) recipe))
+                  (car-recipe (and (listp recipe) (car recipe)))
+                  (car-recipe-is-pkg (and (symbolp car-recipe) (not (keywordp car-recipe))))
+                  (recipe (if (and car-recipe car-recipe-is-pkg) recipe (append (list package) recipe))))
+             (straight-register-package recipe)))
+       ;; Otherwise, add it to the list of configured packages and apply the `use-package' form
        (add-to-list 'minemacs-configured-packages package t)
        (apply origfn package args))))
 
@@ -64,7 +101,7 @@
   ;; install a disabled package).
   (add-hook
    'minemacs-after-loading-modules-hook
-   (defun +use-package--remove-check-if-disabled-advice-h ()
+   (satch-defun +use-package--remove-check-if-disabled-advice-h ()
      (unless +use-package-keep-checking-for-disabled-p
        (advice-remove 'use-package '+use-package--check-if-disabled:around-a)))))
 

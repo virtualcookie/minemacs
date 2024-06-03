@@ -8,6 +8,10 @@
 
 ;;; Code:
 
+(use-package lacarte
+  :straight t
+  :bind ([f10] . lacarte-execute-menu-command))
+
 (use-package svg-lib
   :straight t
   :custom
@@ -85,33 +89,16 @@
 
 (use-package pulsar
   :straight t
-  :hook (minemacs-after-startup . pulsar-global-mode)
+  :hook (minemacs-first-file . pulsar-global-mode)
   :config
   (with-eval-after-load 'evil
-    (setq pulsar-pulse-functions
-          (append pulsar-pulse-functions
-                  '(evil-yank evil-paste-after evil-paste-before
-                    evil-delete evil-delete-line evil-delete-whole-line
-                    evil-goto-last-change evil-goto-last-change-reverse)))))
+    (cl-callf append pulsar-pulse-functions
+      '(evil-yank evil-paste-after evil-paste-before
+        evil-delete evil-delete-line evil-delete-whole-line
+        evil-goto-last-change evil-goto-last-change-reverse))))
 
-;; From Doom Emacs
-(use-package anzu
-  :straight t
-  :custom
-  (anzu-cons-mode-line-p nil) ; We manage our own modeline segments
-  :config
-  ;; Ensure anzu state is cleared when searches & iedit are done
-  (add-hook 'iedit-mode-end-hook #'anzu--reset-status)
-  (advice-add #'evil-force-normal-state :before #'anzu--reset-status)
-  ;; Fix matches segment mirroring across all buffers
-  (mapc #'make-variable-buffer-local
-        '(anzu--total-matched anzu--current-position anzu--state anzu--cached-count
-          anzu--cached-positions anzu--last-command anzu--last-isearch-string anzu--overflow-p)))
-
-(use-package evil-anzu
-  :straight t
-  :unless (+package-disabled-p 'evil 'me-evil)
-  :hook (evil-mode . global-anzu-mode))
+(use-package golden-ratio
+  :straight t)
 
 
 (provide 'me-ui)

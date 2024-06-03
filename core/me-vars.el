@@ -8,34 +8,23 @@
 
 ;;; Code:
 
+;;; MinEmacs groups
+
+(defgroup minemacs nil "MinEmacs specific functionalities." :group 'emacs)
+(defgroup minemacs-apps nil "MinEmacs applications." :group 'minemacs)
+(defgroup minemacs-binary nil "MinEmacs binary files." :group 'minemacs)
+(defgroup minemacs-buffer nil "MinEmacs buffer stuff." :group 'minemacs)
+(defgroup minemacs-completion nil "Completion related stuff." :group 'minemacs)
+(defgroup minemacs-core nil "MinEmacs core tweaks." :group 'minemacs)
+(defgroup minemacs-edit nil "MinEmacs editor tweaks." :group 'minemacs)
+(defgroup minemacs-keybinding nil "MinEmacs keybinding." :group 'minemacs)
+(defgroup minemacs-org nil "MinEmacs org-mode tweaks." :group 'minemacs)
+(defgroup minemacs-prog nil "MinEmacs programming stuff." :group 'minemacs)
+(defgroup minemacs-project nil "MinEmacs project stuff." :group 'minemacs)
+(defgroup minemacs-ui nil "MinEmacs UI tweaks." :group 'minemacs)
+(defgroup minemacs-utils nil "MinEmacs utility functions." :group 'minemacs)
+
 ;;; MinEmacs directories
-
-(defgroup minemacs nil
-  "MinEmacs specific functionalities.")
-
-(defgroup minemacs-core nil
-  "MinEmacs core tweaks."
-  :group 'minemacs)
-
-(defgroup minemacs-ui nil
-  "MinEmacs UI tweaks."
-  :group 'minemacs)
-
-(defgroup minemacs-edit nil
-  "MinEmacs editor tweaks."
-  :group 'minemacs)
-
-(defgroup minemacs-prog nil
-  "MinEmacs programming stuff."
-  :group 'minemacs)
-
-(defgroup minemacs-keybinding nil
-  "MinEmacs keybinding."
-  :group 'minemacs)
-
-(defgroup minemacs-utils nil
-  "MinEmacs utility functions."
-  :group 'minemacs)
 
 (defconst minemacs-ignore-user-config
   (let* ((ignores (getenv "MINEMACS_IGNORE_USER_CONFIG"))
@@ -69,6 +58,10 @@ environment variable \"$MINEMACS_IGNORE_USER_CONFIG\".")
 (defconst minemacs-load-all-modules-p
   (and (getenv "MINEMACS_LOAD_ALL_MODULES") t)
   "Force loading all MinEmacs modules.")
+
+(defconst minemacs-no-proxies-p
+  (and (getenv "MINEMACS_NO_PROXIES") t)
+  "Disable proxies in `minemacs-proxies'.")
 
 (defcustom minemacs-msg-level
   (let ((level (string-to-number (or (getenv "MINEMACS_MSG_LEVEL") ""))))
@@ -227,8 +220,9 @@ it automatically."
     "^VIRTUAL_ENV$"
     ;; KDE session
     "^KDE_\\(FULL_SESSION\\|APPLICATIONS_.*\\|SESSION_\\(UID\\|VERSION\\)\\)$"
-    ;; X server, Wayland, or services' env  that shouldn't be persisted
+    ;; X server, Wayland, or services' env that shouldn't be persisted
     "^DISPLAY$" "^WAYLAND_DISPLAY" "^DBUS_SESSION_BUS_ADDRESS$" "^XAUTHORITY$"
+    "^WINDOWID$" "^GIO_LAUNCHED_DESKTOP_FILE_PID$"
     ;; Windows+WSL envvars that shouldn't be persisted
     "^WSL_INTEROP$"
     ;; XDG variables that are best not persisted.
@@ -238,8 +232,10 @@ it automatically."
     "SOCK$"
     ;; SSH and GPG variables that could quickly become stale if persisted.
     "^SSH_\\(AUTH_SOCK\\|AGENT_PID\\)$" "^\\(SSH\\|GPG\\)_TTY$" "^GPG_AGENT_INFO$"
+    ;; Tmux session
+    "^TMUX$"
     ;; MinEmacs envvars
-    "^MINEMACS\\(_?DIR\\|_\\(ALPHA\\|DEBUG\\|VERBOSE\\|NOT_LAZY\\|MSG_LEVEL\\|IGNORE_.*\\)\\)$")
+    "^MINEMACS\\(_?DIR\\|_\\(ALPHA\\|DEBUG\\|PROFILE\\|VERBOSE\\|NOT_LAZY\\|NO_PROXIES\\|MSG_LEVEL\\|IGNORE_.*\\)\\)$")
   "Environment variables to omit.
 Each string is a regexp, matched against variable names to omit from
 `+env-file' when saving evnironment variables in `+env-save'."
@@ -258,10 +254,8 @@ Each string is a regexp, matched against variable names to omit from
   "Load a file, the FILENAME-PARTS are concatenated to form the file name."
   (let ((filename (file-truename (apply #'file-name-concat filename-parts))))
     (if (file-exists-p filename)
-        (if minemacs-debug-p
-            (load filename nil)
-          (with-demoted-errors "[MinEmacs:LoadError] %s"
-            (load filename nil (not minemacs-verbose-p))))
+        (with-demoted-errors "[MinEmacs:LoadError] %s"
+          (load filename nil (not minemacs-verbose-p)))
       (message "[MinEmacs:Error] Cannot load \"%s\", the file doesn't exists." filename))))
 
 

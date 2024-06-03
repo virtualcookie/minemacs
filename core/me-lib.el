@@ -22,6 +22,23 @@
 
 
 
+(defvar minemacs--lazy-low-priority-forms nil)
+(defvar minemacs--lazy-high-priority-forms nil)
+
+(defmacro +with-delayed! (&rest body)
+  "Delay evaluating BODY with priority 0 (high priority)."
+  (declare (indent 0))
+  `(setq minemacs--lazy-high-priority-forms
+    (append minemacs--lazy-high-priority-forms ',body)))
+
+(defmacro +with-delayed-1! (&rest body)
+  "Delay evaluating BODY with priority 1."
+  (declare (indent 0))
+  `(setq minemacs--lazy-low-priority-forms
+    (append minemacs--lazy-low-priority-forms ',body)))
+
+
+
 ;;; Some plist and alist missing functions
 
 (defun +varplist-get (vplist keyword &optional car-p)
@@ -48,7 +65,7 @@ Ex: (+varplist-get \\='(:a \\='a :b \\='b1 \\='b2) :b) -> \\='(b1 b2)."
     (while (length> key-vals 0)
       (let ((key (pop key-vals))
             (val (pop key-vals)))
-        (setq out (append out `((setq ,plist (plist-put ,plist ,key ,val)))))))
+        (cl-callf append out `((setq ,plist (plist-put ,plist ,key ,val))))))
     out))
 
 (defun +plist-combine (&rest plists)
@@ -108,6 +125,16 @@ value of this method instead of the original alist, to ensure correct results."
       (setcdr pair val)
     (push (cons key val) alist))
   alist)
+
+(defmacro +mode-alist-add-ts-modes! (mode-alist)
+  "Duplicate elements in MODE-ALIST to include Treesit modes.
+
+For the alist \=((some-mode . spec)), this will add \=(some-ts-mode . spec)."
+  `(cl-callf append ,mode-alist
+    (cl-loop
+     for mode-spec in ,mode-alist
+     collect (let ((ts-mode (intern (format "%s-ts-mode" (string-remove-suffix "-mode" (symbol-name (car mode-spec)))))))
+              (when (fboundp ts-mode) (cons ts-mode (cdr mode-spec)))))))
 
 ;;; Missing primitive utilities
 
@@ -175,7 +202,7 @@ If NO-MESSAGE-LOG is non-nil, do not print any message to *Messages* buffer."
   (let ((advice-fn (make-symbol (format "+%s--inhibit-messages:around-a" fn))))
     `(advice-add
       ',fn :around
-      (defun ,advice-fn (origfn &rest args)
+      (satch-defun ,advice-fn (origfn &rest args)
        (let ((message-log-max (unless ,no-message-log message-log-max)))
         (with-temp-message (or (current-message) "")
          (+log! "Inhibiting messages of %s" ,(symbol-name fn))
@@ -249,30 +276,10 @@ This inhebits both the echo area and the `*Messages*' buffer."
   "Run BODY after Emacs gets loaded, a.k.a. after `minemacs-loaded'."
   `(with-eval-after-load 'minemacs-loaded ,@body))
 
-(defmacro +deferred-when! (condition &rest body)
-  "Like `+deferred!', with BODY executed only if CONDITION is non-nil."
-  (declare (indent 1))
-  `(when ,condition (+deferred! ,@body)))
-
-(defmacro +deferred-unless! (condition &rest body)
-  "Like `+deferred!', with BODY executed only if CONDITION is nil."
-  (declare (indent 1))
-  `(unless ,condition (+deferred! ,@body)))
-
 (defmacro +lazy! (&rest body)
   "Run BODY as a lazy block (see `minemacs-lazy')."
   `(with-eval-after-load 'minemacs-lazy
     (+eval-when-idle-for! +lazy-delay ,@body)))
-
-(defmacro +lazy-when! (condition &rest body)
-  "Like `+lazy!', with BODY executed only if CONDITION is non-nil."
-  (declare (indent 1))
-  `(when ,condition (+lazy! ,@body)))
-
-(defmacro +lazy-unless! (condition &rest body)
-  "Like `+lazy!', with BODY executed only if CONDITION is nil."
-  (declare (indent 1))
-  `(unless ,condition (+lazy! ,@body)))
 
 (defmacro +after-load! (features &rest body)
   "Execute BODY after FEATURES have been loaded."
@@ -291,19 +298,6 @@ This inhebits both the echo area and the `*Messages*' buffer."
             (setq body `((with-eval-after-load ',(+unquote next) ,@body)))))
          (t `(+after-load! '(:all ,@features) ,@body)))))))
 
-;; Adapted from: github.com/d12frosted/environment
-(defmacro +hook-with-delay! (hook secs function &optional depth local)
-  "Add the FUNCTION to the value of HOOK.
-The FUNCTION is delayed to be evaluated in SECS once HOOK is
-triggered.
-DEPTH and LOCAL are passed as is to `add-hook'."
-  (let* ((f-name (make-symbol (format "+%s-on-%s-delayed-%.2fs-h" (+unquote function) (+unquote hook) secs)))
-         (f-doc (format "Call `%s' in %d seconds" (symbol-name (+unquote function)) secs)))
-    `(eval-when-compile
-       (defun ,f-name () ,f-doc
-        (run-with-idle-timer ,secs nil ,function))
-       (add-hook ,hook #',f-name ,depth ,local))))
-
 (defvar +hook-once-num 0)
 
 (defmacro +hook-once! (hook &rest body)
@@ -312,9 +306,36 @@ DEPTH and LOCAL are passed as is to `add-hook'."
   (let ((hook (+unquote hook))
         (fn-name (intern (format "+hook-once--function-%d-h" (cl-incf +hook-once-num)))))
     `(add-hook ',hook
-      (defun ,fn-name (&rest _)
+      (satch-defun ,fn-name (&rest _)
        ,(macroexp-progn body)
        (remove-hook ',hook ',fn-name)))))
+
+(defvar +advice-once-num 0)
+
+(defmacro +advice-once! (fns how &rest body)
+  "Run BODY as a HOW advice for FNS, and make it run only once.
+
+FNS can be one function or a list of functions, quoted or not.
+
+Inside BODY, you will have access to the original args as `orig-args'."
+  (declare (indent 2))
+  (let* ((fns (ensure-list (+unquote fns)))
+         (fn-name (intern (format "+advice-once--function-%d-h" (cl-incf +advice-once-num))))
+         (external-forms)
+         (internal-forms))
+    (dolist (fn fns)
+      (push `(advice-add ',fn ,how ',fn-name) external-forms)
+      (push `(advice-remove ',fn ',fn-name) internal-forms))
+    (macroexp-progn
+     (append
+      (list (append `(defun ,fn-name (&rest orig-args))
+                    internal-forms body))
+      external-forms))))
+
+(defcustom +first-file-hook-ignore-list nil
+  "A list of files to ignore in the `minemacs-first-*-file-hook'."
+  :group 'minemacs-core
+  :type '(repeat file))
 
 (defmacro +make-first-file-hook! (filetype ext-regexp)
   "Make a hook which run on the first FILETYPE file of a particular extensions.
@@ -341,19 +362,20 @@ Executed before `find-file-noselect', it runs all hooks in `%s' and provide the 
        (defun ,fn-name (&optional filename &rest _)
         (when (and
                after-init-time ; after Emacs initialization
+               filename ; for named files
                (or
                 (featurep 'minemacs-loaded) ; after MinEmacs is loaded
                 (when-let ((files (cdr command-line-args))) ; or immediately if the file is passed as a command line argument
                  (cl-some (lambda (file) (string= (expand-file-name filename) (expand-file-name file))) files)))
-               filename ; for named files
-               (let ((case-fold-search t)) ;; case-insensitive
-                (string-match-p ,ext-regexp filename))) ; file name matches the regexp
-         (+log! "Running %d `%s' hooks." (length ,hook-name) ',hook-name)
+               (not ; not an ignored file
+                (member (expand-file-name filename) (mapcar #'expand-file-name +first-file-hook-ignore-list)))
+               (let ((case-fold-search t)) ; file name matches the regexp (case-insensitive)
+                (string-match-p ,ext-regexp filename)))
+         (+log! "Running %d `%s' hooks (triggered by: %s)." (length ,hook-name) ',hook-name filename)
          (advice-remove 'find-file-noselect #',fn-name)
          (provide ',feature-name)
          (run-hooks ',hook-name)))
-       (if (daemonp)
-           ;; Load immediately after init when in daemon mode
+       (if (daemonp) ; load immediately after init when in daemon mode
            (add-hook 'after-init-hook (lambda () (provide ',feature-name) (run-hooks ',hook-name)) 90)
          (advice-add 'find-file-noselect :before #',fn-name '((depth . ,(if filetype -100 -101))))))))
 
@@ -502,14 +524,13 @@ the the function.
   "Queue FNS to be byte/natively-compiled after a brief delay."
   (dolist (fn fns)
     (+eval-when-idle!
-      (or (and (featurep 'native-compile)
-               (or (subr-native-elisp-p (indirect-function fn))
-                   ;; Do not log to `comp-log-buffer-name'
-                   (cl-letf (((symbol-function 'comp-log-to-buffer) #'ignore))
-                     (+shutup! (ignore-errors (native-compile fn))))))
-          (byte-code-function-p fn)
+      (if (featurep 'native-compile)
+          (unless (subr-native-elisp-p (indirect-function fn))
+            (cl-letf (((symbol-function 'comp-log-to-buffer) #'ignore)) ; do not log to `comp-log-buffer-name'
+              (+shutup! (ignore-errors (native-compile fn)))))
+        (unless (byte-code-function-p fn)
           (let (byte-compile-warnings)
-            (+shutup! (byte-compile fn)))))))
+            (+shutup! (byte-compile fn))))))))
 
 (defvar +shell-command-switch
   (pcase shell-file-name
@@ -579,165 +600,9 @@ Optionally, check also for the containing MODULE."
    (and (memq package (apply #'append (mapcar #'ensure-list minemacs-disabled-packages))) t)
    (and module (not (memq module (append minemacs-core-modules minemacs-modules))))))
 
-(defvar +package--download-urls nil)
-
-(defun +package-download-from-urls (pkgname &rest args)
-  "Download PKGNAME files from URLs in ARGS.
-
-Pass `:redownload' to force redownloading the package files.
-Returns the load path of the package, useful for usage with `use-package''s
-`:load-path'."
-  (let* ((pkg-load-path (+directory-ensure minemacs-extra-packages-dir (format "%s/" pkgname)))
-         (default-directory pkg-load-path)
-         (redownload-p (memq :redownload args))
-         (urls (remq :redownload args)))
-    (add-to-list '+package--download-urls (cons pkgname urls))
-    (dolist (url urls)
-      (when-let* ((url-file-name (url-filename (url-generic-parse-url url)))
-                  (url-file-name (file-name-nondirectory url-file-name))
-                  (url-file-name (car (string-split url-file-name "?")))) ;; url/file.el?h=tag
-        (when (and redownload-p (file-exists-p url-file-name))
-          (delete-file url-file-name))
-        (unless (file-exists-p url-file-name)
-          (url-copy-file url url-file-name))))
-    pkg-load-path))
-
-(defun minemacs-run-build-functions (&optional dont-ask-p)
-  "Run all build functions in `minemacs-build-functions'.
-
-Call functions without asking when DONT-ASK-P is non-nil."
-  (interactive "P")
-  (dolist (fn minemacs-build-functions)
-    (message "[MinEmacs]: Running `%s'" fn)
-    (if dont-ask-p
-        ;; Do not ask before installing
-        (cl-letf (((symbol-function 'yes-or-no-p) #'always)
-                  ((symbol-function 'y-or-n-p) #'always))
-          (funcall-interactively fn))
-      (funcall-interactively fn))))
-
-(defun minemacs--bump-packages ()
-  "Bump MinEmacs packages to the latest revisions."
-  ;; Backup the current installed versions, this file can be restored if version
-  ;; upgrade does break some packages.
-  (message "[MinEmacs]: Creating backups for the current versions of packages")
-  (let* ((backup-dir (concat minemacs-local-dir "minemacs/versions/"))
-         (dest-file (concat backup-dir (format-time-string "default-%Y%m%d%H%M%S.el")))
-         (src-file (concat straight-base-dir "straight/versions/default.el")))
-    (unless (file-directory-p backup-dir) (mkdir backup-dir 'parents))
-    (when (file-exists-p src-file)
-      (message "[MinEmacs]: Creating backup from \"%s\" to \"%s\"" src-file dest-file)
-      (copy-file src-file dest-file)))
-
-  ;; Update straight recipe repositories
-  (straight-pull-recipe-repositories)
-
-  ;; Run `straight's update cycle, taking into account the explicitly pinned
-  ;; packages versions.
-  (message "[MinEmacs]: Pulling packages")
-  (straight-x-pull-all)
-  (message "[MinEmacs]: Freezing packages")
-  (straight-x-freeze-versions)
-  (message "[MinEmacs]: Rebuilding packages")
-  (straight-rebuild-all)
-
-  ;; Updating packages installed from URLs
-  (message "[MinEmacs]: Updating packages installed from URLs")
-  (mapc (lambda (args) (apply #'+package-download-from-urls (append args '(:redownload)))) +package--download-urls)
-
-  ;; Run package-specific build functions (ex: `pdf-tools-install')
-  (message "[MinEmacs]: Running additional package-specific build functions")
-  (minemacs-run-build-functions 'dont-ask))
-
-(defun minemacs-bump-packages ()
-  "Update MinEmacs packages to the last revisions (can cause breakages)."
-  (interactive)
-  (let ((default-directory minemacs-root-dir)
-        (compilation-buffer-name-function (lambda (_) "" "*minemacs-bump-packages*")))
-    (compile "make bump")))
-
-(defun minemacs-restore-locked-packages (restore-from-backup)
-  "Restore lockfile packages list. Takes into account the pinned ones.
-When called with \\[universal-argument] or with RESTORE-FROM-BACKUP, it will
-restore the lockfile from backups, not Git."
-  (interactive "P")
-  (let* ((lockfile (concat straight-base-dir "straight/versions/default.el"))
-         (default-directory (vc-git-root lockfile))
-         (backup-dir (concat minemacs-local-dir "minemacs/versions/")))
-    ;; Update straight recipe repositories
-    (straight-pull-recipe-repositories)
-    (if (not restore-from-backup)
-        (progn
-          (message "[MinEmacs] Reverting file \"%s\" to the original" lockfile)
-          (unless (zerop (vc-git-revert lockfile))
-            ;; Signal an error when the `vc-git-revert' returns non-zero
-            (user-error "[MinEmacs] An error occurred when trying to revert \"%s\"" lockfile)))
-      (message "[MinEmacs] Trying to restore the lockfile from backups.")
-      (if-let* ((_ (file-exists-p backup-dir))
-                (backups (directory-files backup-dir nil "[^.][^.]?\\'"))
-                (restore-backup-file (completing-read "Select which backup to restore: " backups))
-                (last-backup (expand-file-name restore-backup-file backup-dir)))
-          (if (not (file-exists-p last-backup))
-              (user-error "[MinEmacs] No backup file")
-            (copy-file last-backup lockfile 'overwrite-existing)
-            (message "[MinEmacs] Restored the last backup from \"%s\"" restore-backup-file))))
-    ;; This will ensure that the pinned lockfile is up-to-date
-    (straight-x-freeze-pinned-versions)
-    ;; Restore packages to the versions pinned in the lockfiles
-    (when (file-exists-p (concat straight-base-dir "versions/pinned.el"))
-      (message "[MinEmacs] Restoring pinned versions of packages")
-      (straight-x-thaw-pinned-versions))
-    (message "[MinEmacs] Restoring packages from the global lockfile versions")
-    (straight-thaw-versions)
-    ;; Rebuild the packages
-    (message "[MinEmacs] Rebuilding packages")
-    (straight-rebuild-all)
-    ;; Run package-specific build functions (ex: `pdf-tools-install')
-    (message "[MinEmacs] Running additional package-specific build functions")
-    (minemacs-run-build-functions 'dont-ask)))
-
-(defun minemacs-upgrade (pull-minemacs)
-  "Upgrade MinEmacs and its packages to the latest pinned versions (recommended).
-
-When PULL-MINEMACS is non-nil, run a \"git pull\" in MinEmacs' directory.
-
-This calls `minemacs-update-restore-locked' asynchronously."
-  (interactive "P")
-  (let ((default-directory minemacs-root-dir)
-        (compilation-buffer-name-function (lambda (_) "" "*minemacs-upgrade*"))
-        (cmd (format "sh -c '%smake locked'" (if pull-minemacs "git pull && " ""))))
-    (compile cmd)))
-
-(defun +minemacs-root-dir-cleanup ()
-  "Cleanup MinEmacs' root directory."
-  (let ((default-directory minemacs-root-dir))
-    (mapc (+apply-partially-right #'+delete-file-or-directory 'trash 'recursive)
-          (directory-files minemacs-root-dir nil (rx (seq bol (or "eln-cache" "auto-save-list" "elpa") eol))))))
-
 
 
 ;;; Files, directories and IO helper functions
-
-(defun +file-mime-type (file)
-  "Get MIME type for FILE based on magic codes provided by the \"file\" command.
-Return a symbol of the MIME type, ex: `text/x-lisp', `text/plain',
-`application/x-object', `application/octet-stream', etc."
-  (if-let ((file-cmd (executable-find "file"))
-           (mime-type (shell-command-to-string (format "%s --brief --mime-type %s" file-cmd file))))
-      (intern (string-trim-right mime-type))
-    (error "The \"file\" command isn't installed")))
-
-(defun +file-name-incremental (filename)
-  "Return a unique file name for FILENAME.
-If \"file.ext\" exists, returns \"file-0.ext\"."
-  (let* ((ext (file-name-extension filename))
-         (dir (file-name-directory filename))
-         (file (file-name-base filename))
-         (filename-regex (concat "^" file "\\(?:-\\(?1:[[:digit:]]+\\)\\)?" (if ext (concat "\\." ext) "")))
-         (last-file (car (last (directory-files dir nil filename-regex))))
-         (last-file-num (and last-file (string-match filename-regex last-file) (match-string 1 last-file)))
-         (num (1+ (string-to-number (or last-file-num "-1")))))
-    (file-name-concat dir (format "%s%s%s" file (if last-file (format "-%d" num) "") (if ext (concat "." ext) "")))))
 
 (defun +file-read-to-string (filename)
   "Return a string with the contents of FILENAME."
@@ -758,69 +623,13 @@ If \"file.ext\" exists, returns \"file-0.ext\"."
 Ensure the path exists, if not create it. The exact behavior is to create the
 parent directory if the path is a file, and if the path is a directory, create
 that directory."
-  (let* ((path (mapconcat #'identity path-parts nil))
+  (let* ((path (apply #'concat path-parts))
          (parent-dir (file-name-directory path)))
     (unless (file-directory-p parent-dir)
       (ignore-errors (mkdir parent-dir t))
       (unless (file-directory-p parent-dir)
         (+error! "Cannot create directory %s" parent-dir)))
     path))
-
-(defun +directory-root-containing-file (files &optional start-path)
-  "Return the path containing a file from FILES starting from START-PATH."
-  (let ((dir (or start-path (and buffer-file-name (file-name-directory buffer-file-name)) default-directory)))
-    (catch 'root
-      (while dir
-        (when (cl-some #'file-exists-p (mapcar (+apply-partially-right #'expand-file-name dir) (ensure-list files)))
-          (throw 'root dir))
-        (setq dir (file-name-parent-directory dir))))))
-
-(defun +delete-this-file (&optional path force-p)
-  "Delete PATH.
-
-If PATH is not specified, default to the current buffer's file.
-
-If FORCE-P, delete without confirmation."
-  (interactive
-   (list (buffer-file-name (buffer-base-buffer))
-         current-prefix-arg))
-  (let* ((path (or path (buffer-file-name (buffer-base-buffer))))
-         (short-path (abbreviate-file-name path)))
-    (unless (and path (file-exists-p path))
-      (user-error "Buffer is not visiting any file"))
-    (unless (file-exists-p path)
-      (error "File doesn't exist: %s" path))
-    (unless (or force-p (y-or-n-p (format "Really delete %S?" short-path)))
-      (user-error "Aborted"))
-    (unwind-protect
-        (progn (delete-file path delete-by-moving-to-trash) t)
-      (when (file-exists-p path)
-        (error "Failed to delete %S" short-path)))))
-
-;; Rewrite of: crux-delete-file-and-buffer, proposes also to delete VC
-;; controlled files even when `vc-delete-file' fails (edited, conflict, ...).
-(defun +delete-this-file-and-buffer (&optional filename)
-  "Delete FILENAME and its associated visiting buffer."
-  (interactive)
-  (when-let ((filename (or filename (buffer-file-name)))
-             (short-path (abbreviate-file-name filename)))
-    (if (vc-backend filename)
-        (or (ignore-errors (vc-delete-file (buffer-file-name)))
-            (+delete-this-file filename)
-            (kill-buffer))
-      (when (y-or-n-p (format "Are you sure you want to delete %s? " short-path))
-        (delete-file filename delete-by-moving-to-trash)
-        (message "Deleted file %s" short-path)
-        (kill-buffer)))))
-
-(defun +delete-file-or-directory (file-or-directory &optional trash recursive)
-  "Delete FILE-OR-DIRECTORY with `delete-file' or `delete-directory'.
-
-Move to trash when TRASH is non-nil, delete directories recursively when
-RECURSIVE is non-nil."
-  (if (file-directory-p file-or-directory)
-      (delete-directory file-or-directory recursive trash)
-    (delete-file file-or-directory trash)))
 
 (if (fboundp 'rename-visited-file)
     (defalias '+move-this-file #'rename-visited-file)
@@ -841,251 +650,6 @@ If FORCE-P, overwrite the destination file if it exists, without confirmation."
       (rename-file old-path new-path (or force-p 1))
       (set-visited-file-name new-path t t)
       (message "File moved to %S" (abbreviate-file-name new-path)))))
-
-(defun +tramp-sudo-file-path (file)
-  "Construct a Tramp sudo path to FILE. Works for both local and remote files."
-  (tramp-make-tramp-file-name "sudo" tramp-root-id-string nil (or (file-remote-p file 'host) "localhost") nil file))
-
-(defun +sudo-find-file (file)
-  "Open FILE as root."
-  (interactive "FOpen file as root: ")
-  (find-file (+tramp-sudo-file-path file)))
-
-(defun +sudo-this-file ()
-  "Open the current file as root."
-  (interactive)
-  (if-let ((this-file (or buffer-file-name
-                          (when (derived-mode-p 'dired-mode 'wdired-mode)
-                            default-directory))))
-      (find-file (+tramp-sudo-file-path this-file))
-    (user-error "Current buffer not bound to a file")))
-
-(defun +sudo-save-buffer ()
-  "Save this buffer as root. Save as new file name if called with prefix."
-  (interactive)
-  (if-let ((file (or (and (or (not buffer-file-name) current-prefix-arg)
-                          (read-file-name "Save as root to: "))
-                     buffer-file-name))
-           (file (+tramp-sudo-file-path (expand-file-name file)))
-           (dest-buffer (find-file-noselect file))
-           (src-buffer (current-buffer)))
-      (progn
-        (copy-to-buffer dest-buffer (point-min) (point-max))
-        (unwind-protect (with-current-buffer dest-buffer (save-buffer))
-          (unless (eq src-buffer dest-buffer) (kill-buffer dest-buffer))
-          (with-current-buffer src-buffer (revert-buffer t t))))
-    (user-error "Unable to open %S" (abbreviate-file-name file))))
-
-(defun +yank-this-file-name ()
-  "Yank the file name of this buffer."
-  (interactive)
-  (if-let ((file (buffer-file-name)))
-      (with-temp-buffer
-        (insert file)
-        (kill-ring-save (point-min) (point-max)))
-    (user-error "This buffer isn't bound to a file")))
-
-(defun +clean-file-name (filename &optional downcase-p)
-  "Clean FILENAME, optionally convert to DOWNCASE-P."
-  ;; Clean slashes, backslashes, ":", ";", spaces, and tabs
-  (replace-regexp-in-string
-   "[:;\t\n\r /\\_]+" "-"
-   (replace-regexp-in-string
-    "[‘’‚“”„\"`'()&]+" ""
-    (if downcase-p (downcase filename) filename))))
-
-
-
-;;; Exporter and converters
-
-(defcustom +html2pdf-default-backend 'wkhtmltopdf
-  "The default backend to convert HTML files to PDFs in `+html2pdf'."
-  :group 'minemacs-utils
-  :type '(choice
-          (const wkhtmltopdf)
-          (const htmldoc)
-          (const weasyprint)
-          (const pandoc+context)
-          (const pandoc)))
-
-(defcustom +html2pdf-backend-config-file nil
-  "A config file to use with the backend tool (pandoc, weasyprint, ...)."
-  :group 'minemacs-utils
-  :type 'file)
-
-(defun +html2pdf (infile outfile &optional backend)
-  "Convert HTML file INFILE to PDF and save it to OUTFILE.
-When BACKEND is provided, the corresponding program is used, otherwise, the
-value of `+html2pdf-default-backend' is used."
-  (if-let ((default-directory (file-name-directory infile))
-           (backend (or backend +html2pdf-default-backend))
-           (backend-command
-            (pcase backend
-              ('wkhtmltopdf
-               (list "wkhtmltopdf"
-                     "--images" "--disable-javascript" "--enable-local-file-access"
-                     "--encoding" "utf-8"
-                     infile outfile))
-              ('htmldoc
-               (list "htmldoc"
-                     "--charset" "utf-8"
-                     "--bodyfont" "sans" "--textfont" "sans" "--headfootfont" "sans"
-                     "--top" "50#mm" "--bottom" "50#mm" "--right" "50#mm" "--left" "50#mm"
-                     "--fontsize" "10"
-                     "--size" "a4"
-                     "--continuous"
-                     "--outfile" outfile infile))
-              ('weasyprint
-               (list "weasyprint"
-                     "--encoding" "utf-8"
-                     "--stylesheet" (or +html2pdf-backend-config-file
-                                        (expand-file-name "templates/+html2pdf/weasyprint-pdf.css" minemacs-assets-dir))
-                     infile outfile))
-              ('pandoc+context
-               (list "pandoc"
-                     "--pdf-engine=context"
-                     "--variable" "fontsize=10pt"
-                     "--variable" "linkstyle=slanted"
-                     "-o" outfile infile))
-              ('pandoc
-               (list "pandoc"
-                     "--defaults" (or +html2pdf-backend-config-file
-                                      (expand-file-name "templates/+html2pdf/pandoc.yaml" minemacs-assets-dir))
-                     "-o" outfile infile)))))
-      (apply #'call-process (append (list (car backend-command) nil nil nil) (cdr backend-command)))
-    (user-error "Backend \"%s\" not available" backend)))
-
-(defun +txt2html (infile outfile &optional mail-mode-p)
-  "Convert plain-text file INFILE to HTML and save it to OUTFILE.
-When MAIL-MODE-P is non-nil, --mailmode is passed to \"txt2html\"."
-  (apply #'call-process (append '("txt2html" nil nil nil "-8")
-                                (when mail-mode-p '("--mailmode"))
-                                (list "--outfile" outfile infile))))
-
-(defvar +save-as-pdf-filename nil
-  "File name to use, if non-nil, for the output file.")
-
-(defun +save-as-pdf (infile &optional mail-mode-p)
-  "Save URL as PDF.
-This function's signature is compatible with `browse-url-browser-function'
-so it can be used to save HTML pages or emails to PDF.
-When MAIL-MODE-P is non-nil, treat INFILE as a mail."
-  (let* ((infile (string-trim-left infile "file://"))
-         (outfile (+file-name-incremental
-                   (or +save-as-pdf-filename
-                       (expand-file-name
-                        (file-name-with-extension (file-name-base infile) ".pdf")
-                        (file-name-directory infile))))))
-    (if (zerop
-         ;; For HTML files (with extension ".html" or ".htm"), just call `+html2pdf'
-         (if (string-match-p "^html?$" (file-name-extension infile))
-             (+html2pdf infile outfile)
-           ;; For non-HTML (plain-text) files, convert them to HTML then call `+html2pdf'
-           (let ((tmp-html (make-temp-file "txt2html-" nil ".html")))
-             (+txt2html infile tmp-html mail-mode-p)
-             (+html2pdf tmp-html outfile))))
-        (message "Exported PDF to %S"
-                 (truncate-string-to-width (abbreviate-file-name outfile) (/ (window-width (minibuffer-window)) 2) nil nil t))
-      (user-error (if (file-exists-p outfile) "PDF created but with some errors!" "An error occurred, cannot create the PDF!")))))
-
-(defcustom +single-file-executable "single-file"
-  "The executable for \"single-file\" which is used archive HTML pages."
-  :type 'string
-  :group 'minemacs)
-
-(defun +single-file (url out-file)
-  "Save URL into OUT-FILE as a standalone HTML file."
-  (interactive
-   (let ((url (or (thing-at-point 'url) (read-string "URL to save: "))))
-     (list url (read-file-name "Save to: " nil nil nil (url-filename (url-generic-parse-url url))))))
-  (if (executable-find +single-file-executable)
-      (make-process
-       :name "single-file-cli"
-       :buffer "*single-file*"
-       :command (list +single-file-executable
-                      "--browser-executable-path" browse-url-chromium-program
-                      url (expand-file-name out-file)))
-    (user-error "Please set `+single-file-executable' accordingly")))
-
-
-
-;;; Serial port
-
-(autoload 'term-send-string "term")
-(defcustom +serial-port "/dev/ttyUSB0"
-  "The default port (device) to use."
-  :group 'minemacs-serial
-  :type 'file)
-
-(defcustom +serial-baudrate 115200
-  "The default baudrate to use."
-  :group 'minemacs-serial
-  :type 'natnum)
-
-(defcustom +serial-first-commands nil
-  "A list of commands to run in the serial terminal after creation."
-  :group 'minemacs-serial
-  :type '(repeat string))
-
-(defvar +serial-buffer nil)
-(defvar +serial-process nil)
-
-(defun +serial-running-p ()
-  "Is there a serial port terminal running?"
-  (buffer-live-p +serial-buffer) (process-live-p +serial-process))
-
-(defun +serial--run-commands (port baud &rest commands)
-  "Run COMMANDS on a device via serial communication.
-
-Connect at PORT with baudrate BAUD."
-  (let ((commands (ensure-list commands)))
-    (unless (+serial-running-p)
-      (setq +serial-buffer (serial-term port baud)
-            +serial-process (get-buffer-process +serial-buffer)
-            commands (append +serial-first-commands commands)))
-    (if (+serial-running-p)
-        (term-send-string +serial-process (string-join (append commands '("\n")) "\n"))
-      (user-error "Unable to communicate with the serial terminal process"))))
-
-(defun +serial-run-commands (commands &optional port baud)
-  "Run COMMANDS on a device via serial communication.
-
-If PORT or BAUD are nil, use values from `+serial-port' and `+serial-baudrate'."
-  (interactive (list (read-shell-command (format "Run command via serial port: "))))
-  (let ((port (or port +serial-port))
-        (baud (or baud +serial-baudrate)))
-    (+log! "Dev %s@%d: running commands %S" port baud commands)
-    (apply #'+serial--run-commands (append (list port baud) (ensure-list commands)))))
-
-
-
-;;; Networking
-
-(defvar +net-default-device "wlan0")
-
-(defun +net-get-ip-address (&optional dev)
-  "Get the IP-address for device DEV (default: eth0) of the current machine."
-  (let ((dev (or dev +net-default-device)))
-    (format-network-address (car (network-interface-info dev)) t)))
-
-
-
-;;; Github
-
-(defun +github-latest-release (repo &optional fallback-release)
-  "Get the latest release of REPO. Strips the \"v\" at left.
-
-Fallback to FALLBACK-RELEASE when it can't get the last one."
-  (if-let ((latest
-            (ignore-errors
-              (with-temp-buffer
-                (url-insert-file-contents
-                 (format "https://api.github.com/repos/%s/releases/latest" repo))
-                (json-parse-buffer :object-type 'plist)))))
-      (string-trim-left
-       (car (last (split-string (plist-get latest :html_url) "/")))
-       "v")
-    fallback-release))
 
 
 
@@ -1131,131 +695,7 @@ current process."
 
 
 
-;;; Directory local tweaks & hacks
-
-(defun +dir-locals-reload-for-this-buffer ()
-  "Reload directory-local for the current buffer."
-  (interactive)
-  (let ((enable-local-variables :all))
-    (hack-dir-local-variables-non-file-buffer)
-    (+info! "Reloaded directory-local variables for buffer %s"
-            (buffer-name (current-buffer)))))
-
-(defun +dir-locals-reload-for-all-buffers-in-this-directory ()
-  "Reload dir-locals for all buffers in the current `default-directory'."
-  (interactive)
-  (let ((dir default-directory))
-    (dolist (buffer (buffer-list))
-      (with-current-buffer buffer
-        (when (equal default-directory dir)
-          (+dir-locals-reload-for-this-buffer))))))
-
-(defun +dir-locals--autoreload-h ()
-  "Is it relevant to auto reload dir-locals for his buffer."
-  (when (and (buffer-file-name)
-             (equal dir-locals-file (file-name-nondirectory (buffer-file-name))))
-    (+dir-locals-reload-for-all-buffers-in-this-directory)
-    (message "Reloaded directory-local variables defined in %s." dir-locals-file)))
-
-(defvar +dir-locals--autoreload-p nil)
-
-(defun +dir-locals-toggle-autoreload (&optional enable)
-  "Toggle autoloading dir-local variables after editing the \".dir-locals\" file.
-
-If ENABLE is non-nil, force enabling autoreloading."
-  (interactive)
-  (if (or enable (not +dir-locals--autoreload-p))
-      (progn
-        (remove-hook 'after-save-hook #'+dir-locals--autoreload-h)
-        (setq +dir-locals--autoreload-p nil)
-        (message "Disabled auto-reloading directory-locals."))
-    (add-hook 'after-save-hook #'+dir-locals--autoreload-h)
-    (setq +dir-locals--autoreload-p t)
-    (message "Enabled auto-reloading directory-locals.")))
-
-(defun +dir-locals-open-or-create ()
-  "Open or create the dir-locals.el for the current project."
-  (interactive)
-  (let* ((file-name (buffer-file-name))
-         (base-dir (car (ensure-list (dir-locals-find-file file-name)))))
-    (find-file
-     (cond (base-dir (expand-file-name dir-locals-file base-dir))
-           ((project-current) (expand-file-name dir-locals-file (project-root (project-current))))
-           ((vc-root-dir) (expand-file-name dir-locals-file (vc-root-dir)))
-           (t (expand-file-name dir-locals-file (file-name-directory file-name)))))))
-
-
-
-;;; Misc emacs tweaks
-
-;; Adapted from: rougier/nano-emacs
-(defun +what-faces (pos)
-  "Get the font faces at POS."
-  (interactive "d")
-  (let ((faces (remq nil
-                     (list
-                      (get-char-property pos 'read-face-name)
-                      (get-char-property pos 'face)
-                      (plist-get (text-properties-at pos) 'face)))))
-    (message "Faces: %s" faces)))
-
-(defcustom +screenshot-delay 5
-  "A delay to wait before taking the screenshot.
-Applicable only when calling `+screenshot-svg' with a prefix."
-  :group 'minemacs-utils
-  :type 'number)
-
-;; Inspired by: reddit.com/r/emacs/comments/idz35e/comment/g2c2c6y
-(defun +screenshot-svg (outfile)
-  "Save a screenshot of the current frame as an SVG image to OUTFILE.
-
-If launched with a prefix or universal argument, it waits for a moment (defined
-by `+screenshot-delay') before taking the screenshot."
-  (interactive "FSave to file: ")
-  (let ((outfile (file-name-with-extension outfile "svg")))
-    (if current-prefix-arg
-        (run-with-timer +screenshot-delay nil (apply-partially #'+screenshot-svg--take-screenshot outfile))
-      (+screenshot-svg--take-screenshot outfile))))
-
-(defun +screenshot-svg--take-screenshot (&optional outfile)
-  "Save a SVG screenshot of the current frame to OUTFILE."
-  (let* ((tmp-file (make-temp-file "emacs-" nil ".svg"))
-         (data (x-export-frames nil 'svg)))
-    (with-temp-file tmp-file (insert data))
-    (when (stringp outfile) (copy-file tmp-file outfile))
-    (message "Screenshot saved to %s" (or outfile tmp-file))))
-
-;; Kill the minibuffer even when in another windown.
-;; Adapted from: trey-jackson.blogspot.com/2010/04/emacs-tip-36-abort-minibuffer-when.html
-(defun +minibuffer-kill-minibuffer ()
-  "Kill the minibuffer when switching to window with mouse."
-  (interactive)
-  (when (and (>= (recursion-depth) 1) (active-minibuffer-window))
-    (abort-recursive-edit)))
-
-(defun +region-or-thing-at-point ()
-  "Return the region or the thing at point."
-  (when-let ((thing (ignore-errors
-                      (or (prog1 (thing-at-point 'region t)
-                            (deactivate-mark))
-                          (cl-some (+apply-partially-right #'thing-at-point t)
-                                   '(symbol email number string word))))))
-    ;; If the matching thing has multi-lines, join them
-    (string-join (string-lines thing))))
-
-(defvar +webjump-read-string-initial-query nil)
-
-(defun +webjump-read-string-with-initial-query (prompt)
-  (let ((input (read-string (concat prompt ": ") +webjump-read-string-initial-query)))
-    (unless (webjump-null-or-blank-string-p input) input)))
-
-(defun +webjump ()
-  "Like `webjump', with initial query filled from `+region-org-thing-at-point'."
-  (interactive)
-  (require 'webjump)
-  (let ((+webjump-read-string-initial-query (+region-or-thing-at-point)))
-    (cl-letf (((symbol-function 'webjump-read-string) #'+webjump-read-string-with-initial-query))
-      (webjump))))
+;;; Misc Emacs tweaks
 
 (defmacro +def-dedicated-tab! (cmd &rest body)
   "Define +CMD command to run BODY in a dedicated tab.
@@ -1356,338 +796,20 @@ Examples:
                      (eglot-alternatives (ensure-list servers))
                    (ensure-list (car servers)))))))
 
-;; From: github.com/MaskRay/ccls/wiki/eglot#misc
-(defun +eglot-ccls-inheritance-hierarchy (&optional derived)
-  "Show inheritance hierarchy for the thing at point.
-If DERIVED is non-nil (interactively, with prefix argument), show
-the children of class at point."
-  (interactive "P")
-  (if-let* ((res (jsonrpc-request
-                  (eglot--current-server-or-lose)
-                  :$ccls/inheritance
-                  (append (eglot--TextDocumentPositionParams)
-                          `(:derived ,(if derived t :json-false))
-                          '(:levels 100) '(:hierarchy t))))
-            (tree (list (cons 0 res))))
-      (with-help-window "*ccls inheritance*"
-        (with-current-buffer standard-output
-          (while tree
-            (pcase-let ((`(,depth . ,node) (pop tree)))
-              (cl-destructuring-bind (&key uri range) (plist-get node :location)
-                (insert (make-string depth ?\ ) (plist-get node :name) "\n")
-                (make-text-button
-                 (+ (pos-bol 0) depth) (pos-eol 0)
-                 'action (lambda (_arg)
-                           (interactive)
-                           (find-file (eglot--uri-to-path uri))
-                           (goto-char (car (eglot--range-region range)))))
-                (cl-loop for child across (plist-get node :children)
-                         do (push (cons (1+ depth) child) tree)))))))
-    (eglot--error "Hierarchy unavailable")))
-
 
 
 ;;; Binary files tweaks
 
-(defgroup minemacs-binary nil
-  "MinEmacs binary files."
-  :group 'minemacs)
-
-(defcustom +binary-objdump-executable "objdump"
-  "The \"objdump\" command."
-  :group 'minemacs-binary
-  :type '(choice file string))
-
-(defcustom +binary-objdump-enable t
-  "Enable or disable disassembling suitable files with objdump."
-  :group 'minemacs-binary
-  :type 'boolean)
+;; (add-to-list 'magic-fallback-mode-alist '(+binary-hexl-buffer-p . +binary-hexl-mode-maybe) t))
 
 (defcustom +binary-hexl-enable t
   "Enable or disable opening suitable files in `hexl-mode'."
   :group 'minemacs-binary
   :type 'boolean)
 
-(defun +binary-objdump-p (filename)
-  "Can FILENAME be recognized by \"objdump\"."
-  (when-let* ((file (and filename (file-truename filename))))
-    (and +binary-objdump-executable
-         (executable-find +binary-objdump-executable)
-         (not (file-remote-p file))
-         (file-exists-p file)
-         (not (file-directory-p file))
-         (not (zerop (file-attribute-size (file-attributes file))))
-         (not (string-match-p "file format not recognized"
-                              (shell-command-to-string
-                               (format "%s --file-headers %s"
-                                       +binary-objdump-executable
-                                       (shell-quote-argument file))))))))
-
-(defun +binary-objdump-buffer-p (&optional buffer)
-  "Can the BUFFER be viewed as a disassembled code with objdump."
-  (and +binary-objdump-enable (+binary-objdump-p (buffer-file-name buffer))))
-
-;; A predicate for detecting binary files. Inspired by:
-;; emacs.stackexchange.com/q/10277/37002)
-(defun +binary-buffer-p (&optional buffer)
-  "Return whether BUFFER or the current buffer is binary.
-
-A binary buffer is defined as containing at least one null byte.
-
-Returns either nil, or the position of the first null byte."
-  (with-current-buffer (or buffer (current-buffer))
-    (save-excursion
-      (goto-char (point-min))
-      (search-forward (string ?\x00) nil t 1))))
-
-(defun +binary-file-p (file &optional chunk)
-  "Is FILE a binary?
-
-This checks the first CHUNK of bytes, defaults to 1024."
-  (with-temp-buffer
-    (insert-file-contents-literally file nil 0 (or chunk 1024))
-    (goto-char (point-min))
-    (search-forward (string ?\x00) nil t 1)))
-
-(defun +binary-hexl-buffer-p (&optional buffer)
-  "Does BUFFER (defaults to the current buffer) should be viewed using `hexl-mode'."
-  (and +binary-hexl-enable
-       (+binary-buffer-p buffer)
-       ;; Executables are viewed with objdump mode
-       (not (+binary-objdump-buffer-p buffer))))
-
-(define-derived-mode objdump-disassemble-mode
-  special-mode "Objdump Mode"
-  "Major mode for viewing executable files disassembled using objdump."
-  (if-let* ((file (buffer-file-name))
-            (objdump-file (+binary-objdump-p file)))
-      (let ((buffer-read-only nil))
-        (message "Disassembling %S using objdump." (file-name-nondirectory file))
-        (erase-buffer)
-        (set-visited-file-name (file-name-with-extension file "_dias.objdump"))
-        (call-process "objdump" nil (current-buffer) nil "-d" file)
-        (goto-char (point-min))
-        (buffer-disable-undo)
-        (set-buffer-modified-p nil)
-        (view-mode 1)
-        (read-only-mode 1)
-        ;; Apply syntax highlighting from `asm-mode'
-        (require 'asm-mode)
-        (set-syntax-table (make-syntax-table asm-mode-syntax-table))
-        (modify-syntax-entry ?# "< b") ; use # for comments
-        (setq-local font-lock-defaults '(asm-font-lock-keywords)))
-    (user-error "Objdump can not be used with this buffer")))
-
-(defun +binary-hexl-mode-maybe ()
-  "Activate `hexl-mode' if relevant for the current buffer."
-  (interactive)
-  (when (and (not (eq major-mode 'hexl-mode)) (+binary-hexl-buffer-p))
-    (hexl-mode 1)))
-
-(defun +binary-setup-modes ()
-  "Setup binary modes (objdump and hexl) for relevant buffers and file types."
-  (add-to-list 'magic-fallback-mode-alist '(+binary-objdump-buffer-p . objdump-disassemble-mode) t)
-  (add-to-list 'magic-fallback-mode-alist '(+binary-hexl-buffer-p . +binary-hexl-mode-maybe) t))
-
-
-
-;;; Buffer related tweaks
-
-(defgroup minemacs-buffer nil
-  "MinEmacs buffer stuff."
-  :group 'minemacs)
-
-;; From: emacswiki.org/emacs/download/misc-cmds.el
-;; Candidate as a replacement for `kill-buffer', at least when used interactively.
-;; For example: (define-key global-map [remap kill-buffer] 'kill-buffer-and-its-windows)
-;; We cannot just redefine `kill-buffer', because some programs count on a
-;; specific other buffer taking the place of the killed buffer (in the window).
-(defun +kill-buffer-and-its-windows (buffer &optional msgp)
-  "Kill BUFFER and delete its windows.  Default is `current-buffer'.
-BUFFER may be either a buffer or its name (a string)."
-  (interactive (list (read-buffer "Kill buffer: " (current-buffer) 'existing) 'MSGP))
-  (setq buffer (get-buffer buffer))
-  (if (buffer-live-p buffer) ; Kill live buffer only.
-      (let ((wins (get-buffer-window-list buffer nil t))) ; On all frames.
-        (when (kill-buffer buffer) ; Only delete windows if buffer killed.
-          (dolist (win wins) ; (User might keep buffer if modified.)
-            (when (window-live-p win)
-              ;; Ignore error, in particular,
-              ;; "Attempt to delete the sole visible or iconified frame".
-              (condition-case nil (delete-window win) (error nil))))))
-    (when msgp (user-error "Cannot kill buffer.  Not a live buffer: `%s'" buffer))))
-
-;; From: emacswiki.org/emacs/download/misc-cmds.el
-(defun +region-to-buffer (start end buffer arg)
-  "Copy region to BUFFER: At beginning (prefix >= 0), end (< 0), or replace.
-START and END are the region boundaries.
-BUFFER is a buffer or its name (a string).
-With prefix ARG >= 0: `append-to-buffer':
-  Append contents of region to end of BUFFER.
-  (Point is moved to end of BUFFER first.)
-With prefix ARG < 0:  `prepend-to-buffer':
-  Prepend contents of region to beginning of BUFFER.
-  (Point is moved to beginning of BUFFER first.)
-With no prefix ARG (nil): `copy-to-buffer'.
-  Write region to BUFFER, replacing any previous contents."
-  (interactive
-   (let ((arg (and current-prefix-arg (prefix-numeric-value current-prefix-arg))))
-     (list (region-beginning)
-           (region-end)
-           (read-buffer
-            (concat (if arg
-                        (if (natnump arg) "Append" "Prepend")
-                      "Write")
-                    " region to buffer: ")
-            (if (fboundp 'another-buffer) ; Defined in `misc-fns.el'.
-                (another-buffer nil t)
-              (other-buffer (current-buffer))))
-           arg)))
-  (setq buffer (get-buffer-create buffer)) ; Convert to buffer.
-  (when (eq buffer (current-buffer)) (error "Cannot copy region to its own buffer"))
-  (cond ((natnump arg)
-         (with-current-buffer buffer (goto-char (point-max)))
-         (append-to-buffer buffer start end))
-        (arg
-         (with-current-buffer buffer (goto-char (point-min)))
-         (prepend-to-buffer buffer start end))
-        (t (copy-to-buffer buffer start end))))
-
-;; From: emacswiki.org/emacs/download/misc-cmds.el
-(defun +region-to-file (start end filename arg)
-  "With prefix arg, this is `append-to-file'.  Without, it is `write-region'.
-START and END are the region boundaries.
-Prefix ARG non-nil means append region to end of file FILENAME.
-Prefix ARG nil means write region to FILENAME, replacing contents."
-  (interactive
-   (list (region-beginning)
-         (region-end)
-         (read-file-name (concat (if current-prefix-arg "Append" "Write")
-                                 " region to file: "))
-         current-prefix-arg))
-  (let* ((curr-file (buffer-file-name))
-         (same-file-p (and curr-file (string= curr-file filename))))
-    (cond ((or (not same-file-p)
-               (progn (when (fboundp 'flash-ding) (flash-ding))
-                      (yes-or-no-p
-                       (format
-                        "Do you really want to REPLACE the contents of `%s' by just the REGION? "
-                        (file-name-nondirectory curr-file)))))
-           (write-region start end filename arg)
-           (when same-file-p (revert-buffer t t)))
-          (t (message "OK.  Not written.")))))
-
-(defun +kill-some-buffers (&optional list)
-  "Kill some buffers.  Asks the user whether to kill the modified ones.
-Non-interactively, if optional argument LIST is non-nil, it
-specifies the list of buffers to kill, asking for approval for each one.
-See `kill-some-buffers'."
-  (interactive)
-  ;; Replace the `kill-buffer-ask' locally (used by `kill-some-buffers')
-  ;; with our function which don't ask about unmodified buffers.
-  (cl-letf (((symbol-function 'kill-buffer-ask) #'+kill-buffer-ask-if-modified))
-    (kill-some-buffers list)))
-
-(defcustom +kill-buffer-no-ask-list
-  (list (or (bound-and-true-p messages-buffer-name) "*Messages*") "*Warnings*")
-  "A list of buffer names to be killed without confirmation."
-  :group 'minemacs-buffer
-  :type '(repeat string))
-
-(with-eval-after-load 'comp
-  (when (featurep 'native-compile)
-    (setq
-     +kill-buffer-no-ask-list
-     (append +kill-buffer-no-ask-list
-             (ensure-list (bound-and-true-p comp-async-buffer-name))
-             (ensure-list (bound-and-true-p comp-log-buffer-name))))))
-
-(defun +kill-buffer-ask-if-modified (buffer)
-  "Like `kill-buffer-ask', but kills BUFFER without confirmation when unmodified.
-Kill without asking for buffer names in `+kill-buffer-no-ask-list'."
-  (when (or (not (buffer-modified-p buffer))
-            (member (buffer-name buffer) +kill-buffer-no-ask-list)
-            (yes-or-no-p (format "Buffer %s HAS BEEN MODIFIED.  Kill? "
-                                 (buffer-name buffer))))
-    (kill-buffer buffer)))
-
-;; From: emacswiki.org/emacs/download/misc-cmds.el
-(defun +delete-extra-windows-for-buffer ()
-  "Delete all other windows showing the selected window's buffer."
-  (interactive)
-  (let* ((selwin (selected-window))
-         (buf (window-buffer selwin)))
-    (walk-windows
-     (lambda (ww)
-       (unless (eq ww selwin)
-         (when (eq (window-buffer ww) buf)
-           (delete-window ww))))
-     'NO-MINI 'THIS-FRAME)))
-
-;; From: emacswiki.org/emacs/download/misc-cmds.el
-(defun +delete-window-maybe-kill-buffer ()
-  "Delete selected window.
-If no other window shows its buffer, kill the buffer too."
-  (interactive)
-  (let* ((selwin (selected-window))
-         (buf (window-buffer selwin)))
-    (delete-window selwin)
-    (unless (get-buffer-window buf 'visible) (kill-buffer buf))))
-
-(defun +replace-in-buffer (old new)
-  "Replace OLD with NEW in the current buffer."
-  (save-excursion
-    (goto-char (point-min))
-    (let ((case-fold-search nil)
-          (matches 0))
-      (while (re-search-forward old nil t)
-        (replace-match new)
-        (cl-incf matches))
-      matches)))
-
-(defun +clear-frenchy-ponctuations ()
-  "Replace french ponctuations (like unsectable space) by regular ones."
-  (interactive)
-  (let ((chars
-         '(("[\u00a0\u200b]" . "") ;; Non-breaking and zero-width spaces
-           ;; Special spaces and quads
-           ("[\u2000-\u200A\u202F\u205F\u3000]" . " ")
-           ("[‘’‚’]" . "'")
-           ("[“”„”«»]" . "\"")))
-        (matches 0))
-    (dolist (pair chars)
-      (cl-incf matches (+replace-in-buffer (car pair) (cdr pair))))
-    (message "Replaced %d match%s." matches (if (> matches 1) "es" ""))))
-
-(defun +kill-region-as-paragraph ()
-  "Kill (copy) region as one paragraph.
-This command removes new line characters between lines."
-  (interactive)
-  (when (use-region-p)
-    (let ((text (buffer-substring-no-properties (region-beginning) (region-end))))
-      (with-temp-buffer
-        (insert text)
-        (goto-char (point-min))
-        (let ((case-fold-search nil))
-          (while (re-search-forward "\n[^\n]" nil t)
-            (replace-region-contents
-             (- (point) 2) (- (point) 1)
-             (lambda (&optional a b) " ")))
-          (kill-new (buffer-string)))))
-    (deactivate-mark)))
-
-(defun +first-line-empty-p ()
-  "Return t when the first line of the buffer is empty."
-  (save-excursion (goto-char (point-min))
-                  (and (bolp) (eolp))))
-
 
 
 ;;; Project tweaks
-
-(defgroup minemacs-project nil
-  "MinEmacs project stuff."
-  :group 'minemacs)
 
 (defcustom +project-scan-dir-paths nil
   "A list of paths to scan and add to known projects list.
@@ -1706,91 +828,49 @@ It can be a list of strings (paths) or a list of (cons \"~/path\" recursive-p) t
       (dolist (dir sub-dirs)
         (project-remember-projects-under dir recursive)))))
 
-(defun +project-add-project (dir &optional dont-ask)
-  "Switch to another project at DIR.
-When DIR is not detected as a project, ask to force it to be by adding a
-\".project.el\" file. When DONT-ASK is non-nil, create the file without asking."
-  (interactive (list (project-prompt-project-dir)))
-  (project-switch-project dir)
-  (when (and (not (project-current))
-             (or dont-ask
-                 (yes-or-no-p "Directory not detected as a project, add \".project.el\"? ")))
-    (with-temp-buffer
-      (write-file (expand-file-name ".project.el" dir)))))
-
-(defun +project-forget-zombie-projects ()
-  "Forget all known projects that don't exist any more.
-
-Like `project-forget-zombie-projects', but handles remote projects differently,
-it forget them only when we are sure they don't exist."
-  (interactive)
-  (dolist (proj (project-known-project-roots))
-    (unless (or (and (file-remote-p proj nil t) (file-readable-p proj)) ; Connected remote + existent project
-                (file-remote-p proj) ; Non connected remote project
-                (file-exists-p proj)) ; Existent local project
-      (project-forget-project proj))))
-
-(defun +project-gdb ()
-  "Invoke `gdb' in the project's root."
-  (interactive)
-  (let ((default-directory (project-root (project-current t))))
-    (call-interactively #'gdb)))
-
-(defun +project-list-cleanup ()
-  "Forget all duplicate known projects (/home/user/proj, ~/proj)."
-  (interactive)
-  (let* ((projs (mapcar #'expand-file-name (project-known-project-roots)))
-         (projs-dups (cl-set-difference projs (cl-remove-duplicates projs :test #'string=))))
-    (mapc #'project-forget-project projs-dups)
-    (project-forget-zombie-projects)
-    (dolist (proj projs)
-      (let ((proj-abbrev (abbreviate-file-name proj)))
-        (unless (string= proj proj-abbrev)
-          (project-forget-project proj)
-          (project-remember-projects-under proj-abbrev))))))
-
-
-
-;;; Systemd helpers
-
-(defun +systemd-running-p (service)
-  "Check if the systemd SERVICE is running."
-  (zerop (call-process "systemctl" nil nil nil "--user" "is-active" "--quiet" service ".service")))
-
-(defun +systemd-command (service command &optional pre-fn post-fn)
-  "Call systemd with COMMAND and SERVICE."
-  (when pre-fn (funcall pre-fn))
-  (let ((success (zerop (call-process "systemctl" nil nil nil "--user" command service ".service"))))
-    (unless success
-      (user-error "[systemd]: Failed on calling '%s' on service %s.service" command service))
-    (when post-fn (funcall post-fn success))
-    success))
-
-(defun +systemd-start (service &optional pre-fn post-fn)
-  "Start systemd SERVICE. Optionally run PRE-FN and POST-FN."
-  (+systemd-command service "start" pre-fn post-fn))
-
-(defun +systemd-stop (service &optional pre-fn post-fn)
-  "Stops the systemd SERVICE. Optionally run PRE-FN and POST-FN."
-  (+systemd-command service "stop" pre-fn post-fn))
-
 
 
 ;;; Proxy
 ;;; =====
 
-(defun minemacs-enable-proxy ()
-  "Set *_proxy Linux environment variables from `minemacs-proxies'."
-  (interactive)
-  (dolist (prox minemacs-proxies)
-    (let ((var (format "%s_proxy" (car prox))))
-      (+log! "Set %S to %S" var (cdr prox))
-      (setenv var (cdr prox)))))
+(defun minemacs-get-enabled-proxies ()
+  "Get a list of enabled proxies."
+  (cl-loop
+   for prox in '("no" "ftp" "http" "https")
+   append (cl-loop for fn in '(downcase upcase)
+                   collect (cons (funcall fn prox) (getenv (funcall fn (format "%s_proxy" prox)))))))
+
+(defun minemacs-set-enabled-proxies (proxies)
+  "Set PROXIES."
+  (cl-loop
+   for prox in proxies
+   do (cl-loop
+       for fn in '(upcase downcase)
+       do (cons (funcall fn (car prox)) (setenv (funcall fn (format "%s_proxy" (car prox))) (cdr prox))))))
+
+(defun minemacs-enable-proxy (proxies)
+  "Set *_proxy Linux environment variables from PROXIES."
+  (interactive (list minemacs-proxies))
+  (minemacs-set-enabled-proxies proxies))
 
 (defun minemacs-disable-proxy ()
   "Unset *_proxy Linux environment variables."
   (interactive)
-  (mapc #'setenv (mapcar (apply-partially #'format "%s_proxy") (mapcar #'car minemacs-proxies))))
+  (minemacs-set-enabled-proxies (mapcar (lambda (a) (list (car a))) (minemacs-get-enabled-proxies))))
+
+(defmacro +with-proxies (&rest body)
+  "Execute BODY with proxies enabled from `minemacs-proxies'."
+  `(let ((old-proxies (minemacs-get-enabled-proxies)))
+    (minemacs-enable-proxy minemacs-proxies)
+    ,@body
+    (minemacs-enable-proxy old-proxies)))
+
+(defmacro +with-no-proxies (&rest body)
+  "Execute BODY with proxies disabled."
+  `(let ((old-proxies (minemacs-get-enabled-proxies)))
+    (minemacs-disable-proxy)
+    ,@body
+    (minemacs-enable-proxy old-proxies)))
 
 
 
@@ -2234,7 +1314,7 @@ scaling factor for the font in Emacs' `face-font-rescale-alist'. See the
 
 (defun +font-installed-p (font-family)
   "Check if FONT-FAMILY is installed on the system."
-  (and font-family (member font-family (font-family-list)) t))
+  (and font-family (member font-family (and (fboundp 'font-family-list) (font-family-list))) t))
 
 (defun +apply-font-or-script (script-or-face)
   "Set font for SCRIPT-OR-FACE from `minemacs-fonts-plist'."
@@ -2258,46 +1338,20 @@ scaling factor for the font in Emacs' `face-font-rescale-alist'. See the
 (defun +setup-fonts ()
   "Setup fonts."
   (interactive)
-  (mapc #'+apply-font-or-script
-        (reverse
-         (mapcar (lambda (k) (intern (substring (symbol-name k) 1)))
-                 (+plist-keys minemacs-fonts-plist))))
+  (when (display-graphic-p)
+    (mapc #'+apply-font-or-script
+          (reverse
+           (mapcar (lambda (k) (intern (substring (symbol-name k) 1)))
+                   (+plist-keys minemacs-fonts-plist))))
 
-  ;; Set the tooltip font accordingly
-  (when-let ((font (car (fontset-list))))
-    (setq tooltip-frame-parameters (+alist-set 'font font tooltip-frame-parameters)))
+    ;; Set the tooltip font accordingly
+    (when-let ((font (car (and (fboundp 'fontset-list) (fontset-list)))))
+      (setq tooltip-frame-parameters (+alist-set 'font font tooltip-frame-parameters))))
 
   ;; Run hooks
   (run-hooks 'minemacs-after-setup-fonts-hook))
 
 (+add-hook! (window-setup server-after-make-frame) #'+setup-fonts)
-
-
-
-(defun +list-external-dependencies ()
-  "Show the list of declared external dependencies."
-  (interactive)
-  (unless (featurep 'me-external-tools) (+load minemacs-core-dir "me-external-tools.el"))
-  (with-current-buffer (get-buffer-create "*external-dependencies*")
-    (read-only-mode -1)
-    (delete-region (point-min) (point-max))
-    (insert "# External Tools
-To get the maximum out of this configuration, you would need to install some
-external tools, either in your development machine, docker, remote host, etc.
-The presence of these programs isn't mandatory, however, for better experience,
-you might need install some of these tools.\n\n")
-    (let ((counter 0))
-      (dolist (dep minemacs-external-dependencies)
-        (insert (format "%d. [%s](%s) - %s\n"
-                        (cl-incf counter)
-                        (string-join (mapcar (apply-partially #'format "`%s`")
-                                             (ensure-list (plist-get dep :tool)))
-                                     ", ")
-                        (plist-get dep :link)
-                        (plist-get dep :desc)))))
-    (markdown-mode)
-    (read-only-mode 1)
-    (pop-to-buffer (current-buffer))))
 
 
 

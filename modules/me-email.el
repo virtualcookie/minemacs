@@ -14,7 +14,7 @@
 
 (defgroup minemacs-mu4e nil
   "MinEmacs mu4e tweaks."
-  :group 'minemacs)
+  :group 'minemacs-apps)
 
 (defconst +mu4e-available-p
   (and (executable-find "mu") (executable-find "msmtp") (executable-find "mbsync") (file-directory-p +mu4e-load-path)))
@@ -23,7 +23,7 @@
   :when +mu4e-available-p
   :load-path +mu4e-load-path
   :commands mu4e-compose-new mu4e
-  :functions mu4e--start
+  :autoload mu4e--start
   :hook (mu4e-headers-mode . (lambda ()
                                (visual-line-mode -1)
                                (display-line-numbers-mode -1)))
@@ -91,7 +91,7 @@
   ;; Force running update and index in background
   (advice-add
    'mu4e-update-mail-and-index :around
-   (defun +mu4e--update-mail-quitely:around-a (origfn run-in-background)
+   (satch-defun +mu4e--update-mail-quitely:around-a (origfn run-in-background)
      (+info! "Getting new emails")
      (apply origfn '(t)))))
 
@@ -100,7 +100,7 @@
   :when +mu4e-available-p
   :load-path +mu4e-load-path
   :after mu4e
-  :demand t
+  :demand
   :custom
   (mu4e-icalendar-trash-after-reply t)
   :config
@@ -109,7 +109,7 @@
 (use-package me-mu4e-ui
   :when +mu4e-available-p
   :after mu4e
-  :demand t
+  :demand
   :config
   ;; Setup the UI (mostly inspired by Doom Emacs, with a lot of improvements)
   (+mu4e-ui-setup)
@@ -118,7 +118,7 @@
 (use-package me-mu4e-gmail
   :when +mu4e-available-p
   :after mu4e
-  :demand t
+  :demand
   :config
   ;; Setup Gmail specific hacks (adapted from Doom Emacs, with a lot of improvements)
   (+mu4e-gmail-setup))
@@ -126,7 +126,7 @@
 (use-package me-mu4e-extras
   :when +mu4e-available-p
   :after mu4e
-  :demand t
+  :demand
   :config
   ;; Enable MinEmacs's mu4e extra features, including:
   ;; - Auto BCC the `+mu4e-auto-bcc-address';
@@ -149,7 +149,7 @@
   :straight t
   :when +mu4e-available-p
   :after mu4e
-  :demand t
+  :demand
   :custom
   (org-msg-options "html-postamble:nil H:5 num:nil ^:{} toc:nil author:nil email:nil tex:dvipng")
   (org-msg-startup "hidestars indent inlineimages")
@@ -179,7 +179,7 @@
   ;; HACK: When adding multiple attachments, I likely need it to remember the directory of the last added attachment.
   (advice-add
    'org-msg-attach-attach :after
-   (defun +org-msg-attach-attach--save-default-directory:after-a (file &rest _)
+   (satch-defun +org-msg-attach-attach--save-default-directory:after-a (file &rest _)
      (when-let ((dir (file-name-directory file)))
        (setq-local default-directory dir)))))
 
@@ -187,7 +187,7 @@
   :straight t
   :when +mu4e-available-p
   :after mu4e org
-  :demand t
+  :demand
   :config
   ;; Do not export table of contents nor author name
   (setq org-mime-export-options '(:with-latex dvipng :section-numbers t :with-author nil :with-toc nil)))
@@ -196,7 +196,7 @@
   :straight t
   :when +mu4e-available-p
   :after mu4e
-  :demand t
+  :demand
   :custom
   (mu4e-alert-icon
    (let ((icon "/usr/share/icons/Papirus/64x64/apps/mail-client.svg"))
@@ -244,6 +244,13 @@
                "\n• ")))))
 
   (setq mu4e-alert-grouped-mail-notification-formatter #'+mu4e-alert-grouped-mail-notif-formatter))
+
+(use-package mu4e-crypto
+  :straight t
+  :when +mu4e-available-p
+  :after mu4e
+  :bind (:map mu4e-compose-mode-map ("C-c C-m e" . mu4e-crypto-encrypt-message))
+  :bind (:map mu4e-view-mode-map ("C-c C-m d" . mu4e-crypto-decrypt-message)))
 
 
 (provide 'me-email)

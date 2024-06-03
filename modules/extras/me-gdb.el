@@ -50,7 +50,7 @@
 
   (advice-add
    'gdb :around
-   (defun +gdb--set-window-layout:around-a (origfn &rest args)
+   (satch-defun +gdb--set-window-layout:around-a (origfn &rest args)
      ;; Save current buffer
      (setq +gdb--old-win-config (current-window-configuration))
      (let ((c-buffer (window-buffer (selected-window))))
@@ -59,7 +59,7 @@
 
   (advice-add
    'gdb-reset :after
-   (defun +gdb--restore-window-layout:after-a (&rest _)
+   (satch-defun +gdb--restore-window-layout:after-a (&rest _)
      (when +gdb--old-win-config
        (set-window-configuration +gdb--old-win-config)))))
 
@@ -68,7 +68,7 @@
   (interactive)
   (setq gdb-many-windows +gdb--many-windows-old)
   (advice-remove 'gdb #'+gdb--set-window-layout:around-a)
-  (advice-add 'gdb-reset #'+gdb--restore-window-layout:after-a))
+  (advice-remove 'gdb-reset #'+gdb--restore-window-layout:after-a))
 
 ;;;###autoload
 (defun +emacs-gdb-enable ()
@@ -80,7 +80,7 @@ This will overwrite the built-in \"gdb-mi\" for this session."
         (use-package gdb-mi
           ;; I use my own fork in which I've merged some open PRs on the upstream.
           :straight (:host github :repo "abougouffa/emacs-gdb" :files (:defaults "*.c" "*.h" "Makefile"))
-          :demand t
+          :demand
           :init
           (fmakunbound 'gdb)
           (fmakunbound 'gdb-enable-debug)
@@ -88,3 +88,8 @@ This will overwrite the built-in \"gdb-mi\" for this session."
           (gdb-window-setup-function #'gdb--setup-windows)
           (gdb-ignore-gdbinit nil)))
     (user-error "Cannot enable \"emacs-gdb\", Emacs was built without modules support!")))
+
+
+(provide 'me-gdb)
+
+;;; me-gdb.el ends here

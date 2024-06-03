@@ -8,19 +8,10 @@
 
 ;;; Code:
 
-(use-package zotxt
-  :straight t
-  :when (executable-find "zotero")
-  :init
-  (+map-local! :keymaps 'org-mode-map
-    "z" #'org-zotxt-mode)
-  (+map-local! :keymaps 'markdown-mode-map
-    "z" #'zotxt-citekey-mode))
-
 (use-package citar
   :straight t
   :after minemacs-first-org-file oc
-  :demand t
+  :demand
   :custom
   (org-cite-insert-processor 'citar)
   (org-cite-follow-processor 'citar)
@@ -39,7 +30,7 @@
         (+citar--set-symbols)
       (add-hook
        'server-after-make-frame-hook
-       (defun +citar--set-symbols-once-h ()
+       (satch-defun +citar--set-symbols-once-h ()
          (when (display-graphic-p)
            (+citar--set-symbols)
            (remove-hook 'server-after-make-frame-hook
@@ -48,13 +39,13 @@
 (use-package citar-embark
   :straight t
   :after citar embark
-  :demand t
+  :demand
   :config
   (citar-embark-mode 1))
 
 (use-package org-re-reveal-citeproc
   :straight t
-  :when (and (memq 'me-org minemacs-modules) (not (memq 'org-re-reveal minemacs-disabled-packages))))
+  :when (and (memq 'me-org minemacs-modules) (not (+package-disabled-p 'org-re-reveal))))
 
 
 (provide 'me-biblio)

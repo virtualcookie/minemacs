@@ -10,7 +10,7 @@
 
 (use-package evil
   :straight t
-  :hook (minemacs-after-startup . evil-mode)
+  :hook (minemacs-lazy . evil-mode)
   :preface
   ;; Needed by `evil-collection'
   (setq evil-want-keybinding nil
@@ -51,15 +51,16 @@
   ;; Ask for a buffer when splitting windows
   (with-eval-after-load 'consult
     (dolist (fn '(evil-window-split evil-window-vsplit))
-      (advice-add fn :after
-       (defun +evil--cunsult-buffer-after-window-split:after-a (&rest _)
+      (advice-add
+       fn :after
+       (satch-defun +evil--cunsult-buffer-after-window-split:after-a (&rest _)
          (consult-buffer))))))
 
 (use-package evil-collection
   :straight t
   :unless (+package-disabled-p 'evil 'me-evil)
   :after evil minemacs-loaded
-  :demand t
+  :demand
   :config
   (evil-collection-init
    (seq-filter
@@ -77,10 +78,11 @@
 (use-package evil-snipe
   :straight t
   :unless (+package-disabled-p 'evil 'me-evil)
-  :hook (minemacs-after-startup . evil-snipe-mode)
-  :hook (minemacs-after-startup . evil-snipe-override-mode)
+  :hook (evil-mode . evil-snipe-mode)
+  :hook (evil-mode . evil-snipe-override-mode)
   :custom
   (evil-snipe-scope 'buffer)
+  (evil-snipe-repeat-scope 'buffer)
   (evil-snipe-smart-case t)
   (evil-snipe-auto-scroll t))
 
@@ -100,7 +102,7 @@
 (use-package evil-nerd-commenter
   :straight t
   :unless (+package-disabled-p 'evil 'me-evil)
-  :commands evilnc-comment-operator
+  :commands evilnc-comment-operator evilnc-copy-and-comment-operator
   :init
   (+nvmap!
     "gc" #'evilnc-comment-operator

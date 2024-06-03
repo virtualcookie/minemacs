@@ -45,7 +45,7 @@
 (use-package bitbake-insert
   :straight (bitbake-modes :host bitbucket :repo "olanilsson/bitbake-modes")
   :after bitbake
-  :demand t
+  :demand
   :config
   (+map-local! :keymaps 'bitbake-mode-map
     :infix "i"
@@ -68,6 +68,14 @@
   :config
   (unless (file-exists-p x86-lookup-pdf)
     (url-copy-file "https://cdrdv2.intel.com/v1/dl/getContent/671200" x86-lookup-pdf t)))
+
+(use-package vhdl-ts-mode
+  :straight t
+  :when (+emacs-features-p 'tree-sitter))
+
+(use-package verilog-ts-mode
+  :straight t
+  :when (+emacs-features-p 'tree-sitter))
 
 
 (provide 'me-embedded)

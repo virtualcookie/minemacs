@@ -168,7 +168,7 @@ Example: \"#+TITLE\" -> \"#+title\"
   "Enable multi-files documents."
   (advice-add
    'org-latex-export-to-pdf :around
-   (defun +org--latex-export-to-pdf-main-file:around-a (orig-fn &rest orig-args)
+   (satch-defun +org--latex-export-to-pdf-main-file:around-a (orig-fn &rest orig-args)
      (let* ((main-file (and +org-export-to-pdf-main-file
                             (file-exists-p (expand-file-name +org-export-to-pdf-main-file))))
             (out-file (if main-file
@@ -204,10 +204,7 @@ Example: \"#+TITLE\" -> \"#+title\"
              "\\pagestyle{fancyplain}"
              "\\renewcommand{\\FrenchLabelItem}{\\textbullet}")))
       ;; Some additional LaTeX classes
-      (setq
-       org-latex-classes
-       (append
-        org-latex-classes
+      (cl-callf append org-latex-classes
         `(("blank"
            "[NO-DEFAULT-PACKAGES]\n[NO-PACKAGES]\n[EXTRA]"
            ("\\section{%s}"       . "\\section*{%s}")
@@ -268,19 +265,26 @@ Example: \"#+TITLE\" -> \"#+title\"
            ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
            ("\\paragraph{%s}"     . "\\paragraph*{%s}")
            ("\\subparagraph{%s}"  . "\\subparagraph*{%s}"))
+          ("mdpi"
+           "\\documentclass{Definitions/mdpi}"
+           ("\\section{%s}"       . "\\section*{%s}")
+           ("\\subsection{%s}"    . "\\subsection*{%s}")
+           ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+           ("\\paragraph{%s}"     . "\\paragraph*{%s}")
+           ("\\subparagraph{%s}"  . "\\subparagraph*{%s}"))
           ("ws-us"
            "\\documentclass{ws-us}"
            ("\\section{%s}"       . "\\section*{%s}")
            ("\\subsection{%s}"    . "\\subsection*{%s}")
            ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
            ("\\paragraph{%s}"     . "\\paragraph*{%s}")
-           ("\\subparagraph{%s}"  . "\\subparagraph*{%s}"))))))))
+           ("\\subparagraph{%s}"  . "\\subparagraph*{%s}")))))))
 
 (defun +org-extras-outline-path-setup ()
   "Fix the font size issue in Org's outline in the echo area."
   (advice-add
    #'org-format-outline-path :around
-   (defun +org--strip-properties-from-outline:around-a (fn &rest args)
+   (satch-defun +org--strip-properties-from-outline:around-a (fn &rest args)
      (let ((org-level-faces
             (cl-loop for face in org-level-faces
                      collect `(:foreground ,(face-foreground face nil t)
@@ -300,7 +304,7 @@ Example: \"#+TITLE\" -> \"#+title\"
   (unless (+emacs-features-p 'pgtk) ;; PGTK not need extra up-scaling
     (add-hook
      'org-mode-hook
-     (defun +org--set-format-latex-scale-h ()
+     (satch-defun +org--set-format-latex-scale-h ()
        (setq-local
         org-format-latex-options
         (plist-put
@@ -311,7 +315,7 @@ Example: \"#+TITLE\" -> \"#+title\"
   "Automatically convert KEYWORDS to lower case on save."
   (add-hook
    'before-save-hook
-   (defun +org--lower-case-keywords-and-properties-h ()
+   (satch-defun +org--lower-case-keywords-and-properties-h ()
      (when (and +org-use-lower-case-keywords-and-properties (derived-mode-p 'org-mode))
        (+org-lower-case-keywords-and-properties)))))
 
